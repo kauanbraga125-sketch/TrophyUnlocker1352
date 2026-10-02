@@ -1,0 +1,15 @@
+V13.1 build local, 2026-10-02
+Base V13: b9234b6bb738121eaf9b752b59e907aec0e9d3cf
+PKG SHA-256: 9ef8a5df4986d07d06a856a4698efec44b992194c85afd1f9566454b467f7143
+Bytes: 6619136
+7 grupos de testes PASS com ASan/UBSan; LeakSanitizer desativado no sandbox.
+Regressao: RAX=256/CF=1 nao e transformado em -256; comando 2 e chamado com backup inicializado.
+Respostas realmente negativas/desconhecidas permanecem recusadas; erro real nao e substituido por -78.
+PKG: 28 OK, zero FAIL.
+Eboot extraido e fontes compiladas: iguais aos arquivos do build.
+Modulos basicos e fonte: identicos a V13 testada pelo usuario.
+Assembly final: RAX preservado; CF capturado em RDX imediatamente depois de syscall.
+TITLE_ID BREW13533, APP_VER 01.02; CATEGORY/ATTRIBUTE/PAID/CONTENT_ID preservados.
+V13: usuario confirmou abertura e navegacao, sem jogos.
+V13.1: execucao e acesso real as pastas no PS4 ainda pendentes.
+Desbloqueio de trofeus: ainda nao integrado a UI.
