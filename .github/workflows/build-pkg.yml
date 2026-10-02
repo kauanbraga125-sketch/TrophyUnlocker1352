@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V11 Library
+name: Build Trophy Unlocker 13.52 PKG V11.1 Safe
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V11 real library UI
+      - name: Build V11.1 safe rollback
         shell: bash
         run: |
           chmod +x ci/build_v11_library.sh
           ./ci/build_v11_library.sh
-      - name: Upload V11 library artifact
+      - name: Upload V11.1 safe artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V11-LIBRARY
+          name: TrophyUnlocker1352-V11-1-SAFE
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist_v11/Trophy_Unlocker_13.52_V11_LIBRARY.pkg
-            dist_v11/SHA256SUMS.txt
+            dist_v11_1/Trophy_Unlocker_13.52_V11_1_SAFE.pkg
+            dist_v11_1/SHA256SUMS.txt
