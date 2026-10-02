@@ -97,9 +97,20 @@ jobs:
         run: |
           set -euxo pipefail
           ./scripts/install_into_goldhen_repo.sh "$DEPS/GoldHEN_Plugins_Repository"
-          make -C "$DEPS/GoldHEN_Plugins_Repository/plugin_src/trophy_unlocker_1352" clean
-          make -C "$DEPS/GoldHEN_Plugins_Repository/plugin_src/trophy_unlocker_1352"
-          PRX="$DEPS/GoldHEN_Plugins_Repository/bin/plugins/prx_final/trophy_unlocker_1352.prx"
+          GH_REPO="$DEPS/GoldHEN_Plugins_Repository"
+          COMMIT="$(git -C "$GH_REPO" rev-parse HEAD)"
+          BRANCH="$(git -C "$GH_REPO" branch --show-current)"
+          NUM="$(git -C "$GH_REPO" rev-list HEAD --count)"
+          {
+            echo '#pragma once'
+            echo "#define GIT_COMMIT \"$COMMIT\""
+            echo "#define GIT_VER \"$BRANCH\""
+            echo "#define GIT_NUM $NUM"
+            echo "#define BUILD_DATE \"$(date '+%b %d %Y @ %T')\""
+          } > "$GH_REPO/common/git_ver.h"
+          make -C "$GH_REPO/plugin_src/trophy_unlocker_1352" clean
+          make -C "$GH_REPO/plugin_src/trophy_unlocker_1352"
+          PRX="$GH_REPO/bin/plugins/prx_final/trophy_unlocker_1352.prx"
           test -s "$PRX"
           cp "$PRX" installer/trophy_unlocker_1352.prx
           mkdir -p dist
