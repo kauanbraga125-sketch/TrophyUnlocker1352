@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V11.3 Probe
+name: Build Trophy Unlocker 13.52 PKG V12 UI
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V11.3 Triangle probe
+      - name: Build V12 organized UI
         shell: bash
         run: |
-          chmod +x ci/build_v11_3_fixed.sh
-          ./ci/build_v11_3_fixed.sh
-      - name: Upload V11.3 probe artifact
+          chmod +x ci/build_v12.sh
+          ./ci/build_v12.sh
+      - name: Upload V12 artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V11-3-PROBE
+          name: TrophyUnlocker1352-V12-UI
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist_v11_3/Trophy_Unlocker_13.52_V11_3_PROBE.pkg
-            dist_v11_3/SHA256SUMS.txt
+            dist_v12/Trophy_Unlocker_13.52_V12_UI.pkg
+            dist_v12/SHA256SUMS.txt
