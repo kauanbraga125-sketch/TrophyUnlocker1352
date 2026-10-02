@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V10 Visual
+name: Build Trophy Unlocker 13.52 PKG V11 Library
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V10 visual smoke
+      - name: Build V11 real library UI
         shell: bash
         run: |
-          chmod +x ci/build_v10_visual.sh
-          ./ci/build_v10_visual.sh
-      - name: Upload V10 visual artifact
+          chmod +x ci/build_v11_library.sh
+          ./ci/build_v11_library.sh
+      - name: Upload V11 library artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V10-VISUAL
+          name: TrophyUnlocker1352-V11-LIBRARY
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist_v10/Trophy_Unlocker_13.52_V10_VISUAL.pkg
-            dist_v10/SHA256SUMS.txt
+            dist_v11/Trophy_Unlocker_13.52_V11_LIBRARY.pkg
+            dist_v11/SHA256SUMS.txt
