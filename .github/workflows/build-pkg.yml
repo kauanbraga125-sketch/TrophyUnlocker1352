@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V9 Errno
+name: Build Trophy Unlocker 13.52 PKG V10 Visual
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V9 errno discovery diagnostic
+      - name: Build V10 visual smoke
         shell: bash
         run: |
-          chmod +x ci/build_v9_errno.sh
-          ./ci/build_v9_errno.sh
-      - name: Upload V9 errno artifact
+          chmod +x ci/build_v10_visual.sh
+          ./ci/build_v10_visual.sh
+      - name: Upload V10 visual artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V9-ERRNO
+          name: TrophyUnlocker1352-V10-VISUAL
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist_v9/Trophy_Unlocker_13.52_V9_ERRNO.pkg
-            dist_v9/SHA256SUMS.txt
+            dist_v10/Trophy_Unlocker_13.52_V10_VISUAL.pkg
+            dist_v10/SHA256SUMS.txt
