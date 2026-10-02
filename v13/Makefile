@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13.2 Trofeus
-VERSION     := 01.03
+TITLE       := Trophy Unlocker 13.52 V13.3 DB Memoria
+VERSION     := 01.04
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
