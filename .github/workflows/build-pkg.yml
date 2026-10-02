@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V6
+name: Build Trophy Unlocker 13.52 PKG V7 Smoke
 
 on:
   push:
@@ -12,18 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V6 native dialog UI
+      - name: Build V7 official OpenOrbis smoke test
         shell: bash
         run: |
-          chmod +x ci/build_v6.sh
-          ./ci/build_v6.sh
-      - name: Upload V6 artifacts
+          chmod +x ci/build_v7_smoke.sh
+          ./ci/build_v7_smoke.sh
+      - name: Upload V7 smoke artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-PS4-V6
+          name: TrophyUnlocker1352-V7-SMOKE
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist/Trophy_Unlocker_13.52_Manager_V6.pkg
-            dist/trophy_unlocker_1352.prx
-            dist/SHA256SUMS.txt
+            dist_v7/Trophy_Unlocker_13.52_V7_SMOKE.pkg
+            dist_v7/SHA256SUMS.txt
