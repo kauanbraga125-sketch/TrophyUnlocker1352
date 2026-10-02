@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V8 Discovery
+name: Build Trophy Unlocker 13.52 PKG V9 Errno
 
 on:
   push:
@@ -12,17 +12,17 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V8 installed-game discovery test
+      - name: Build V9 errno discovery diagnostic
         shell: bash
         run: |
-          chmod +x ci/build_v8_discovery.sh
-          ./ci/build_v8_discovery.sh
-      - name: Upload V8 discovery artifact
+          chmod +x ci/build_v9_errno.sh
+          ./ci/build_v9_errno.sh
+      - name: Upload V9 errno artifact
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V8-DISCOVERY
+          name: TrophyUnlocker1352-V9-ERRNO
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist_v8/Trophy_Unlocker_13.52_V8_DISCOVERY.pkg
-            dist_v8/SHA256SUMS.txt
+            dist_v9/Trophy_Unlocker_13.52_V9_ERRNO.pkg
+            dist_v9/SHA256SUMS.txt
