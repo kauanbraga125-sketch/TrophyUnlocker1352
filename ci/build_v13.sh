@@ -21,8 +21,13 @@ export LD_LIBRARY_PATH="$DEPS/legacy-ssl/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PA
 export DOTNET_BUNDLE_EXTRACT_BASE_DIR="$DEPS/dotnet-bundle"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
-# Apollo uses this PS4 SQLite port for trophy_local.db. Pin the exact revision
-# so future upstream changes do not silently change our package.
+# libSQLite-ps4 expects the common OpenOrbis library build rules used by Apollo.
+OOSDK_LIB_COMMIT="5b86e2d25e674f64b8dce9aee319a9f8aa6a09ea"
+curl -fLsS --retry 3 \
+  "https://raw.githubusercontent.com/bucanero/oosdk_libraries/$OOSDK_LIB_COMMIT/build_rules.mk" \
+  -o "$OO_PS4_TOOLCHAIN/build_rules.mk"
+
+# Apollo uses this PS4 SQLite port for trophy_local.db. Pin the exact revision.
 SQLITE_COMMIT="0e9ef79f42777271964fd019afb0b82c437b29e2"
 if [[ ! -d "$DEPS/libSQLite-ps4/.git" ]]; then
   git clone -q https://github.com/bucanero/libSQLite-ps4.git "$DEPS/libSQLite-ps4"
