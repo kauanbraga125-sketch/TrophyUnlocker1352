@@ -1,9 +1,9 @@
-TITLE       := Trophy Unlocker 13.52 V13.1 Acesso
-VERSION     := 01.02
+TITLE       := Trophy Unlocker 13.52 V13.2 Trofeus
+VERSION     := 01.03
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
-LIBS        := -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2 -lSDL2_image
+LIBS        := -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2 -lSDL2_image -lSQLite
 EXTRAFLAGS  := -fexceptions -fcxx-exceptions
 ASSETS      := $(wildcard assets/**/*)
 LIBMODULES  := $(wildcard sce_module/*)
