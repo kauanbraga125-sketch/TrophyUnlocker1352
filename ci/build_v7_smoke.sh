@@ -12,12 +12,13 @@ rm -rf "$DEPS" "$WORK" "$DIST"
 mkdir -p "$DEPS" "$WORK" "$DIST"
 
 sudo apt-get update
-sudo apt-get install -y clang-18 lld-18 llvm-18 make curl tar unzip file docker.io
+sudo apt-get install -y clang-18 lld-18 llvm-18 make curl tar unzip file
 sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang
 sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
 sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
 sudo ln -sf /usr/bin/llvm-ar-18 /usr/local/bin/llvm-ar
 sudo ln -sf /usr/bin/llvm-ranlib-18 /usr/local/bin/llvm-ranlib
+command -v docker
 
 cd "$DEPS"
 curl -fL --retry 5 --retry-all-errors \
@@ -39,8 +40,18 @@ python3 - <<'PY'
 from pathlib import Path
 p = Path('dialogs/main.c')
 s = p.read_text()
-s = s.replace('if (show_dialog(MDIALOG_YESNO, "Do you like %s?", "OpenOrbis"))\n    {\n        show_dialog(MDIALOG_OK, "User likes %s :)", "OpenOrbis");\n    }\n    else\n    {\n        show_dialog(MDIALOG_OK, "User doesn\'t like %s :(", "OpenOrbis");\n    }',
-'''show_dialog(MDIALOG_OK, "Trophy Unlocker 13.52 - V7 smoke test abriu.\\n\\nEste build usa somente o sample oficial OpenOrbis.\\nFeche pelo botao PS.");''')
+old = '''if (show_dialog(MDIALOG_YESNO, "Do you like %s?", "OpenOrbis"))
+    {
+        show_dialog(MDIALOG_OK, "User likes %s :)", "OpenOrbis");
+    }
+    else
+    {
+        show_dialog(MDIALOG_OK, "User doesn't like %s :(", "OpenOrbis");
+    }'''
+new = '''show_dialog(MDIALOG_OK, "Trophy Unlocker 13.52 - V7 smoke test abriu.\\n\\nEste build usa somente o sample oficial OpenOrbis.\\nFeche pelo botao PS.");'''
+if old not in s:
+    raise SystemExit('official dialog block not found')
+s = s.replace(old, new, 1)
 p.write_text(s)
 PY
 
@@ -51,6 +62,7 @@ sed -i 's/^CONTENT_ID  :=.*/CONTENT_ID  := IV0000-BREW13525_00-TROPHYSMOKEV7000/
 grep -q "CATEGORY --type Utf8 --maxsize 4 --value 'gd'" Makefile
 ! grep -q -- '--authinfo' Makefile
 grep -q 'for(;;);' dialogs/main.c
+grep -q 'V7 smoke test abriu' dialogs/main.c
 
 # Run stock OpenOrbis PkgTool with the runtime it was built for.
 TOOL="$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core"
