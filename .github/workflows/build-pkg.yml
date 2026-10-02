@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG
+name: Build Trophy Unlocker 13.52 PKG V3
 
 on:
   push:
@@ -62,6 +62,75 @@ jobs:
           echo "OO_PS4_TOOLCHAIN=$TOOLCHAIN_DIR" >> "$GITHUB_ENV"
           chmod +x "$TOOLCHAIN_DIR/bin/linux/"* || true
 
+      - name: Apply V3 launch-compatible homebrew layout
+        shell: bash
+        run: |
+          set -euxo pipefail
+          mkdir -p installer/sce_sys/about installer/sce_module
+          cp "$OO_PS4_TOOLCHAIN/samples/hello_world/sce_sys/about/right.sprx" installer/sce_sys/about/right.sprx
+          cp "$OO_PS4_TOOLCHAIN/samples/hello_world/sce_module/libc.prx" installer/sce_module/libc.prx
+          cp "$OO_PS4_TOOLCHAIN/samples/hello_world/sce_module/libSceFios2.prx" installer/sce_module/libSceFios2.prx
+          cat > installer/Makefile <<'MAKEFILE'
+          TITLE       := Trophy Unlocker 13.52 Manager
+          VERSION     := 1.00
+          TITLE_ID    := BREW13521
+          CONTENT_ID  := IV0000-BREW13521_00-TROPHYUNLOCK1352
+          AUTHINFO    := 000000000000000000000000001C004000FF000000000080000000000000000000000000000000000000008000400040000000000000008000000000000000080040FFFF000000F000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000
+          TOOLCHAIN   := $(OO_PS4_TOOLCHAIN)
+          ODIR        := build
+          SDIR        := src
+          LIBS        := -lc -lkernel -lScePad -lSceUserService
+          LIBMODULES  := $(wildcard sce_module/*)
+          CFLAGS      := --target=x86_64-pc-freebsd12-elf -fPIC -funwind-tables -c -O2 -std=gnu11 -Wall -Wextra -isysroot $(TOOLCHAIN) -isystem $(TOOLCHAIN)/include -I$(SDIR)
+          LDFLAGS     := -m elf_x86_64 -pie --script $(TOOLCHAIN)/link.x --eh-frame-hdr -L$(TOOLCHAIN)/lib $(LIBS) $(TOOLCHAIN)/lib/crt1.o
+          CFILES      := $(wildcard $(SDIR)/*.c)
+          OBJS        := $(patsubst $(SDIR)/%.c,$(ODIR)/%.o,$(CFILES))
+          UNAME_S     := $(shell uname -s)
+          ifeq ($(UNAME_S),Linux)
+          CC          := clang
+          LD          := ld.lld
+          CDIR        := linux
+          endif
+          ifeq ($(UNAME_S),Darwin)
+          CC          := /usr/local/opt/llvm/bin/clang
+          LD          := /usr/local/opt/llvm/bin/ld.lld
+          CDIR        := macos
+          endif
+          all: $(CONTENT_ID).pkg
+          $(CONTENT_ID).pkg: pkg.gp4
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core pkg_build $< .
+          pkg.gp4: eboot.bin trophy_unlocker_1352.prx sce_sys/about/right.sprx sce_sys/param.sfo sce_sys/icon0.png $(LIBMODULES)
+          	$(TOOLCHAIN)/bin/$(CDIR)/create-gp4 -out $@ --content-id=$(CONTENT_ID) --files "$^"
+          sce_sys/param.sfo: Makefile
+          	@mkdir -p sce_sys
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_new $@
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_TYPE --type Integer --maxsize 4 --value 1
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ APP_VER --type Utf8 --maxsize 8 --value '$(VERSION)'
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ ATTRIBUTE --type Integer --maxsize 4 --value 0
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ CATEGORY --type Utf8 --maxsize 4 --value 'gde'
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ CONTENT_ID --type Utf8 --maxsize 48 --value '$(CONTENT_ID)'
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ DOWNLOAD_DATA_SIZE --type Integer --maxsize 4 --value 0
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ SYSTEM_VER --type Integer --maxsize 4 --value 0
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ TITLE --type Utf8 --maxsize 128 --value '$(TITLE)'
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ TITLE_ID --type Utf8 --maxsize 12 --value '$(TITLE_ID)'
+          	$(TOOLCHAIN)/bin/$(CDIR)/PkgTool.Core sfo_setentry $@ VERSION --type Utf8 --maxsize 8 --value '$(VERSION)'
+          eboot.bin: $(ODIR) $(OBJS)
+          	$(LD) $(ODIR)/*.o -o $(ODIR)/eboot.elf $(LDFLAGS)
+          	$(TOOLCHAIN)/bin/$(CDIR)/create-fself -in=$(ODIR)/eboot.elf -out=$(ODIR)/eboot.oelf --eboot "eboot.bin" --paid 0x3800000000000011 --authinfo=$(AUTHINFO)
+          $(ODIR)/%.o: $(SDIR)/%.c
+          	$(CC) $(CFLAGS) -o $@ $<
+          $(ODIR):
+          	@mkdir -p $@
+          clean:
+          	rm -rf build eboot.bin pkg.gp4 sce_sys/param.sfo *.pkg
+          .PHONY: all clean
+          MAKEFILE
+          sed -i 's/^          //' installer/Makefile
+          test -s installer/sce_sys/about/right.sprx
+          test -s installer/sce_module/libc.prx
+          test -s installer/sce_module/libSceFios2.prx
+          grep -E 'TITLE_ID|CONTENT_ID|CATEGORY|authinfo|right.sprx|LIBMODULES' installer/Makefile
+
       - name: Use stock OpenOrbis PkgTool.Core under .NET Core 3.1
         run: |
           set -euxo pipefail
@@ -121,25 +190,31 @@ jobs:
           mkdir -p dist
           cp "$PRX" dist/trophy_unlocker_1352.prx
 
-      - name: Build installable manager PKG
+      - name: Build and validate installable V3 PKG
         run: |
           set -euxo pipefail
           make -C installer clean
           make -C installer
-          PKG="installer/IV0000-BREW13520_00-TROPHYUNLOCK1352.pkg"
+          PKG="installer/IV0000-BREW13521_00-TROPHYUNLOCK1352.pkg"
           test -s "$PKG"
-          cp "$PKG" dist/Trophy_Unlocker_13.52_Manager.pkg
-          sha256sum dist/Trophy_Unlocker_13.52_Manager.pkg dist/trophy_unlocker_1352.prx > dist/SHA256SUMS.txt
+          grep -q 'sce_sys/about/right.sprx' installer/pkg.gp4
+          grep -q 'sce_module/libc.prx' installer/pkg.gp4
+          grep -q 'sce_module/libSceFios2.prx' installer/pkg.gp4
+          "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core" sfo_listentries installer/sce_sys/param.sfo
+          "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core" pkg_validate --verbose "$PKG"
+          "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core" pkg_listentries "$PKG"
+          cp "$PKG" dist/Trophy_Unlocker_13.52_Manager_V3.pkg
+          sha256sum dist/Trophy_Unlocker_13.52_Manager_V3.pkg dist/trophy_unlocker_1352.prx > dist/SHA256SUMS.txt
           file dist/*
           ls -lh dist
 
       - name: Upload PS4 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-PS4-stock-pkgtool
+          name: TrophyUnlocker1352-PS4-V3
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist/Trophy_Unlocker_13.52_Manager.pkg
+            dist/Trophy_Unlocker_13.52_Manager_V3.pkg
             dist/trophy_unlocker_1352.prx
             dist/SHA256SUMS.txt
