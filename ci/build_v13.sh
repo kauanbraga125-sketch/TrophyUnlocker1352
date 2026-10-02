@@ -35,6 +35,6 @@ fi
 git -C "$DEPS/libSQLite-ps4" fetch -q origin "$SQLITE_COMMIT"
 git -C "$DEPS/libSQLite-ps4" checkout -q --detach "$SQLITE_COMMIT"
 make -C "$DEPS/libSQLite-ps4" clean >/dev/null || true
-make -C "$DEPS/libSQLite-ps4" install
+make -C "$DEPS/libSQLite-ps4" AR=llvm-ar-18 install
 
 bash "$ROOT/v13/build.sh"
