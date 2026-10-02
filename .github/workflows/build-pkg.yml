@@ -41,6 +41,7 @@ jobs:
           clang --version
           ld.lld --version
           llvm-ar --version
+          docker --version
 
       - name: Run host safety tests
         run: make -C host_test clean run
@@ -61,23 +62,27 @@ jobs:
           echo "OO_PS4_TOOLCHAIN=$TOOLCHAIN_DIR" >> "$GITHUB_ENV"
           chmod +x "$TOOLCHAIN_DIR/bin/linux/"* || true
 
-      - name: Build modern PkgTool.Core fallback
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '8.0.x'
-
-      - name: Replace legacy PkgTool.Core with .NET 8 build
+      - name: Use stock OpenOrbis PkgTool.Core under .NET Core 3.1
         run: |
           set -euxo pipefail
-          git clone --depth 1 https://github.com/maxton/LibOrbisPkg.git "$DEPS/LibOrbisPkg"
-          sed -i 's#<TargetFramework>netcoreapp3.0</TargetFramework>#<TargetFramework>net8.0</TargetFramework>#' \
-            "$DEPS/LibOrbisPkg/LibOrbisPkg.Core/LibOrbisPkg.Core.csproj" \
-            "$DEPS/LibOrbisPkg/PkgTool.Core/PkgTool.Core.csproj"
-          dotnet publish "$DEPS/LibOrbisPkg/PkgTool.Core/PkgTool.Core.csproj" \
-            -c Release -r linux-x64 --self-contained true -p:PublishSingleFile=true \
-            -o "$DEPS/pkgtool"
-          cp "$DEPS/pkgtool/PkgTool.Core" "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core"
-          chmod +x "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core"
+          TOOL="$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core"
+          test -s "$TOOL"
+          mv "$TOOL" "$TOOL.real"
+          docker pull mcr.microsoft.com/dotnet/core/runtime:3.1-bionic
+          cat > "$TOOL" <<EOF
+          #!/usr/bin/env bash
+          set -e
+          exec docker run --rm \
+            --user "$(id -u):$(id -g)" \
+            -e DOTNET_ROLL_FORWARD=Minor \
+            -e DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 \
+            -v /home/runner/work:/home/runner/work \
+            -w "\$PWD" \
+            mcr.microsoft.com/dotnet/core/runtime:3.1-bionic \
+            "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core.real" "\$@"
+          EOF
+          chmod +x "$TOOL"
+          "$TOOL" version || "$TOOL" --help || true
 
       - name: Fetch GoldHEN SDK and plugin repository
         run: |
@@ -131,7 +136,7 @@ jobs:
       - name: Upload PS4 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-PS4
+          name: TrophyUnlocker1352-PS4-stock-pkgtool
           if-no-files-found: error
           retention-days: 7
           path: |
