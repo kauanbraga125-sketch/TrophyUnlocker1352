@@ -14,5 +14,5 @@ FileSystem& native_filesystem() {
     }
     return fs;
 }
-AccessResult request_goldhen_access() { AccessResult r; r.attempted=true; r.sdk=0x100; return r; }
+AccessResult request_goldhen_access() { AccessResult r; r.attempted=true; r.sdk=0x100; r.sdk_carry=1; r.jailbreak_attempted=true; return r; }
 }

@@ -196,7 +196,7 @@ int Library::save_manual() {
 }
 std::string Library::diagnostic(const AccessResult& a) const {
     char line[200];
-    snprintf(line, sizeof(line), "Trophy Unlocker V13\nGoldHEN attempted=%d sdk=%lld jailbreak=%lld\n", int(a.attempted), (long long)a.sdk, (long long)a.jailbreak);
+    snprintf(line, sizeof(line), "Trophy Unlocker V13.1\nGoldHEN requested=%d sdk_raw=%lld sdk_CF=%llu\naccess_sent=%d access_raw=%lld access_CF=%llu\n", int(a.attempted), (long long)a.sdk, (unsigned long long)a.sdk_carry, int(a.jailbreak_attempted), (long long)a.jailbreak, (unsigned long long)a.jailbreak_carry);
     std::string result = line;
     for (const RootResult& root : roots) {
         snprintf(line, sizeof(line), "%s status=%d CUSA=%d\n", root.path.c_str(), root.status, root.matches);

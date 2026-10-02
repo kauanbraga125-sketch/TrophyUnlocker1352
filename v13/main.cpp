@@ -183,7 +183,7 @@ int main() {
         if (FT_New_Face(ft,fontpath,0,&faces[i])) for (;;) SDL_Delay(1000);
         FT_Set_Pixel_Sizes(faces[i],0,i == 0 ? 40 : i == 1 ? 27 : 21);
     }
-    SDL_Window* win=SDL_CreateWindow("Trophy Unlocker V13",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,W,H,0);
+    SDL_Window* win=SDL_CreateWindow("Trophy Unlocker V13.1",SDL_WINDOWPOS_UNDEFINED,SDL_WINDOWPOS_UNDEFINED,W,H,0);
     if (!win) for (;;) SDL_Delay(1000);
     SDL_Surface* surface=SDL_GetWindowSurface(win);
     renderer=surface ? SDL_CreateSoftwareRenderer(surface) : nullptr;
@@ -261,7 +261,7 @@ int main() {
         if (first_frame == 1) start_scan();
         if (pending_access) {
             access=tu::request_goldhen_access(); pending_access=false; start_scan();
-            message=access.sdk == 0x100 && access.jailbreak == 0 ? "Acesso GoldHEN solicitado. Conferindo os caminhos novamente..." : "GoldHEN nao liberou o acesso. Use OPTIONS para ver o resultado.";
+            message=access.acknowledged() ? "GoldHEN respondeu. Conferindo o acesso real as pastas..." : "Pedido de acesso sem confirmacao. Use OPTIONS para ver o resultado.";
         }
         // One directory or one game's metadata per frame, never a whole library loop.
         if (library.busy() && screen == LIBRARY) library.scan_step();
@@ -275,7 +275,7 @@ int main() {
         SDL_SetRenderDrawColor(renderer,11,16,24,255); SDL_RenderClear(renderer);
         fill({0,0,W,128},20,27,39);
         text("TROPHY UNLOCKER 13.52",80,22,1000,0);
-        text("V13 - BIBLIOTECA E BUSCA MANUAL",82,77,1200);
+        text("V13.1 - CORRECAO DE ACESSO",82,77,1200);
         fill({0,950,W,130},16,22,32);
         if (screen == LIBRARY) {
             fill({70,160,1270,760},18,24,35); border({70,160,1270,760});
@@ -297,7 +297,7 @@ int main() {
             }
             char count[80]; snprintf(count,sizeof(count),"%zu jogo(s) na lista",library.games.size());
             text(count,1410,260,410);
-            text(access.attempted ? (access.jailbreak == 0 ? "GoldHEN: resposta OK" : "GoldHEN: ver OPTIONS") : "GoldHEN: TRIANGULO",1410,325,410,2);
+            text(access.attempted ? (access.acknowledged() ? "GoldHEN: resposta OK" : "GoldHEN: ver OPTIONS") : "GoldHEN: TRIANGULO",1410,325,410,2);
             for (size_t i=0; i<library.roots.size() && i<4; ++i) {
                 const tu::RootResult& root=library.roots[i];
                 const char* labels[]={"Interno","Externo 0","Externo 1","Metadados"};
@@ -359,12 +359,15 @@ int main() {
             fill({90,160,1740,750},18,24,35); border({90,160,1740,750});
             text("DIAGNOSTICO DE ACESSO",130,187,1500,0);
             char line[200];
-            snprintf(line,sizeof(line),"GoldHEN: solicitado=%d  SDK=%lld  acesso=%lld",int(access.attempted),(long long)access.sdk,(long long)access.jailbreak);
-            text(line,140,279,1590,2);
+            snprintf(line,sizeof(line),"GoldHEN: solicitado=%d  SDK bruto=%lld  CF=%llu",int(access.attempted),(long long)access.sdk,(unsigned long long)access.sdk_carry);
+            text(line,140,271,1590,2);
+            if (access.jailbreak_attempted) snprintf(line,sizeof(line),"Acesso: comando enviado  retorno bruto=%lld  CF=%llu",(long long)access.jailbreak,(unsigned long long)access.jailbreak_carry);
+            else snprintf(line,sizeof(line),"Acesso: comando ainda nao enviado");
+            text(line,140,316,1590,2);
             for (size_t i=0; i<library.roots.size(); ++i) {
                 const tu::RootResult& root=library.roots[i];
                 snprintf(line,sizeof(line),"%s   resultado=%d   CUSA=%d",root.path.c_str(),root.status,root.matches);
-                text(line,140,355+int(i)*54,1580,2);
+                text(line,140,380+int(i)*49,1580,2);
             }
             snprintf(line,sizeof(line),"Lista manual: %d   Salvar diagnostico: %d",manual_load,diagnostic_save);
             text(line,140,731,1580,2);

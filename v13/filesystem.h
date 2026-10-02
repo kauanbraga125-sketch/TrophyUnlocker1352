@@ -23,8 +23,12 @@ FileSystem& native_filesystem();
 struct AccessResult {
     int64_t sdk;
     int64_t jailbreak;
+    uint64_t sdk_carry;
+    uint64_t jailbreak_carry;
     bool attempted;
-    AccessResult() : sdk(0), jailbreak(0), attempted(false) {}
+    bool jailbreak_attempted;
+    AccessResult() : sdk(0), jailbreak(0), sdk_carry(0), jailbreak_carry(0), attempted(false), jailbreak_attempted(false) {}
+    bool acknowledged() const { return jailbreak_attempted && jailbreak == 0; }
 };
 AccessResult request_goldhen_access();
 }

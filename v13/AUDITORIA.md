@@ -1,4 +1,22 @@
-# Auditoria da continuação V12 → V13
+# Auditoria da continuação V12 → V13 → V13.1
+
+## V13.1: correção após teste real
+
+O usuário confirmou que a V13 abre e a navegação manual funciona no PS4 13.52. A foto do diagnóstico mostrou `solicitado=1 SDK=-256 acesso=-78`, os seis caminhos com `resultado=-2`, lista manual `-2` e gravação do diagnóstico `0`.
+
+**Confirmado pelo código da V13:** `acesso=-78` era colocado pela nossa checagem de versão; o comando JAILBREAK não foi executado. Assim, esse número não demonstra ausência da API no GoldHEN. Também está confirmado que o wrapper da V13 negava RAX quando o carry flag (CF) vinha marcado.
+
+**Hipótese compatível com a foto:** a resposta de versão `RAX=256 (0x100)`, documentada pelo SDK público, veio com CF=1 e foi convertida em `-256`. A foto antiga não preserva os dois valores separados, portanto a combinação exata ainda deve ser confirmada no console. Um RAX realmente negativo com CF=0 também produziria -256 na V13.
+
+A V13.1 preserva RAX e CF separadamente. Somente a resposta bruta exata `0x100` permite enviar o comando 2; um retorno realmente negativo ou desconhecido continua sendo recusado. O resultado de acesso não executado é explícito, sem substituir por um código de erro fictício. Uma resposta zero de acesso é apenas o reconhecimento do comando; as pastas são lidas novamente para verificar o efeito real. Tentativas recusadas podem ser repetidas pelo TRIÂNGULO.
+
+Testes de regressão cobrem `256/CF=1`, `256/CF=0`, respostas realmente negativas/desconhecidas, erros reais do comando de acesso, inicialização do backup e a distinção entre retorno da API e pastas efetivamente visíveis. A UI, a descoberta de arquivos e os controles da V13 permanecem com a mesma estrutura. O pacote tem APP_VER `01.02` e mantém CONTENT_ID/TITLE_ID/PAID/CATEGORY/ATTRIBUTE anteriores.
+
+O código público do SDK foi novamente conferido em `include/GoldHEN.h`: VERSION=0, JAILBREAK=2 e GOLDHEN_SDK_VERSION=0x100. A adaptação de CF é específica deste protocolo privado; o tratamento de erros das chamadas de arquivo não foi alterado.
+
+Abaixo fica preservada a auditoria original da V13; a validação atual e o hash da V13.1 estão em `VALIDACAO.txt`.
+
+## Auditoria original da V13
 
 Data: 2026-10-02. Referência recebida: `Trophy_Unlocker_13.52_V12_UI(1).pkg`, SHA-256 `ba6d7cc54d7148d89135ace0fbe7bd2fa1fc42557be498754971a03a80b51f55`.
 

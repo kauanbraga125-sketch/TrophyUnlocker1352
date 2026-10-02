@@ -1,4 +1,5 @@
 #include "filesystem.h"
+#include "goldhen_access.h"
 #include <orbis/libkernel.h>
 #include <fcntl.h>
 #include <cerrno>
@@ -88,9 +89,11 @@ public:
 };
 FileSystem& native_filesystem() { static NativeFS fs; return fs; }
 
-// Same syscall-0 gateway and commands as GoldHEN_Plugins_SDK (MIT),
-// with raw negative errno instead of calling libc's __error from assembly.
-extern "C" int64_t tu_goldhen_command(uint64_t command, void* data);
+// GoldHEN_Plugins_SDK (MIT) syscall-0 gateway. Return RAX unchanged and
+// capture CF immediately in RDX (the second word of the SysV result struct).
+// This is specific to the private GoldHEN protocol; native file errno handling
+// above remains unchanged.
+extern "C" GoldhenReply tu_goldhen_command(uint64_t command, void* data);
 asm(".text\n"
     ".global tu_goldhen_command\n"
     "tu_goldhen_command:\n"
@@ -100,23 +103,16 @@ asm(".text\n"
     "xor %eax, %eax\n"
     "mov %rcx, %r10\n"
     "syscall\n"
-    "jnc 1f\n"
-    "neg %rax\n"
-    "1: ret\n");
-struct JailbreakBackup {
-    uint32_t uid, ruid, rgid, groups;
-    uint64_t paid, caps[2];
-    void *prison, *cdir, *jdir, *rdir;
-};
-static_assert(sizeof(JailbreakBackup) == 72, "GoldHEN SDK backup ABI");
+    "setc %dl\n"
+    "movzbl %dl, %edx\n"
+    "ret\n");
 AccessResult request_goldhen_access() {
     static AccessResult result;
     static JailbreakBackup backup = {};
-    if (result.attempted) return result;
-    result.attempted = true;
-    result.sdk = tu_goldhen_command(0, nullptr);
-    // Public SDK protocol 1.00, no firmware offsets or generic kernel payload.
-    result.jailbreak = result.sdk == 0x100 ? tu_goldhen_command(2, &backup) : -ENOSYS;
+    if (result.acknowledged()) return result;
+    // Failed or unsupported replies can be retried with TRIANGLE; don't cache
+    // a rejection forever. Preserve the backup after an acknowledged request.
+    result = query_goldhen_access(tu_goldhen_command, backup);
     return result;
 }
 }

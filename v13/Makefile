@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13 Busca
-VERSION     := 01.01
+TITLE       := Trophy Unlocker 13.52 V13.1 Acesso
+VERSION     := 01.02
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 

@@ -1,10 +1,10 @@
-# Trophy Unlocker 13.52 — V13 Busca
+# Trophy Unlocker 13.52 — V13.1 Acesso
 
-Continuação direta da V12 que abriu no console, mas não encontrou jogos. Esta versão entrega a biblioteca com busca automática e manual. **O desbloqueio de troféus ainda não está integrado nesta interface. A execução da V13 em PS4 13.52 precisa ser confirmada no console.**
+Correção pontual da V13 que o usuário confirmou abrir e navegar no PS4 13.52. O diagnóstico da V13 mostrou `SDK=-256`, acesso não executado e todas as pastas com `-2`. A V13.1 preserva o retorno bruto do SDK e distingue o comando de acesso não executado de uma resposta real. **Ainda é necessário confirmar no console se essa correção torna os jogos visíveis. O desbloqueio de troféus não está integrado nesta interface.**
 
 ## Instalar e usar
 
-1. Com o GoldHEN ativo, instale `Trophy_Unlocker_13.52_V13_Busca.pkg` e abra **Trophy Unlocker 13.52 V13 Busca**. O pacote mantém o identificador da V12 (`BREW13533`) com versão `01.01`.
+1. Com o GoldHEN ativo, instale `Trophy_Unlocker_13.52_V13_1_Acesso.pkg` e abra **Trophy Unlocker 13.52 V13.1 Acesso**. O pacote mantém o identificador anterior (`BREW13533`) com versão `01.02`.
 2. A biblioteca procura automaticamente nos locais internos, externos e de metadados. Nomes e capas são carregados quando os arquivos correspondentes estão acessíveis.
 3. Se continuar vazia, aperte **TRIÂNGULO na biblioteca**. Isso solicita acesso ao sistema de arquivos pela API pública do GoldHEN e repete a busca. A chamada acontece depois da interface estar aberta; não é executada automaticamente na inicialização.
 4. Se não encontrar o jogo, **QUADRADO** abre a busca manual.
@@ -50,6 +50,8 @@ Na biblioteca, aperte TRIÂNGULO, aguarde a busca e abra OPTIONS. Envie uma foto
 `/data/TrophyUnlocker1352/v13-diagnostic.txt`
 
 `-2` significa caminho ausente ou não visível no ambiente do aplicativo; sozinho, não prova que o jogo não esteja instalado. `-13` indica acesso negado. `0` indica que a leitura da pasta funcionou. O retorno do GoldHEN e o acesso real às pastas são mostrados separadamente.
+
+Na V13.1, `SDK bruto=256` identifica o protocolo público esperado. `CF` registra separadamente um sinalizador retornado pela chamada. A linha **Acesso: comando enviado** confirma que houve uma tentativa real. Um retorno bruto zero dessa chamada não substitui a verificação das pastas: o resultado da busca continua sendo a evidência de acesso aos jogos. Se aparecer **comando ainda não enviado**, envie a foto com o SDK bruto e CF; a V13.1 não inventa mais `-78` para esse caso.
 
 ## Compilar
 
