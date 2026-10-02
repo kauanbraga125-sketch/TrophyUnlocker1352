@@ -5,6 +5,9 @@
 
 namespace tu {
 
+class FileSystem;
+struct Game;
+
 struct Trophy {
     int id = 0;
     int group = 0;
@@ -33,16 +36,11 @@ struct TrophyLoadResult {
 
 bool valid_np_communication_id(const std::string& value);
 const char* trophy_grade_name(int grade);
-
-// Read-only query helper. Exposed separately so the SQL/schema logic can be
-// host-tested without a PS4.
 int query_trophy_database(const std::string& database_path,
                           const std::string& np_communication_id,
                           TrophySet& out,
                           std::string& detail);
-
-// PS4 entry point: resolves the active local user and reads that user's
-// trophy_local.db. This function never writes to the trophy database.
 TrophyLoadResult load_trophies(const std::string& np_communication_id);
+TrophyLoadResult load_trophies_for_game(const Game& game, FileSystem& fs);
 
 }
