@@ -4,7 +4,7 @@ set -euxo pipefail
 cp ci/build_v4.sh /tmp/build_v6_core.sh
 
 # Start from the stable V4 runtime path, then add only the native PS4 dialog UI.
-sed -i '/python3 patches\/patch_v4.py/a python3 patches/patch_v6.py' /tmp/build_v6_core.sh
+sed -i '/python3 patches\/patch_v4.py/a python3 patches/patch_v6.py\nrm -f installer/src/ui_video.c installer/src/ui_video.h' /tmp/build_v6_core.sh
 sed -i 's/Manager V4/Manager V6/g' /tmp/build_v6_core.sh
 sed -i 's/BREW13522/BREW13524/g' /tmp/build_v6_core.sh
 sed -i 's/Manager_V4\.pkg/Manager_V6.pkg/g' /tmp/build_v6_core.sh
