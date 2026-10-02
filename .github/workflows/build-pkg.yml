@@ -35,8 +35,12 @@ jobs:
           sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang
           sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
           sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
+          sudo ln -sf /usr/bin/llvm-ar-18 /usr/local/bin/llvm-ar
+          sudo ln -sf /usr/bin/llvm-ranlib-18 /usr/local/bin/llvm-ranlib
+          sudo ln -sf /usr/bin/llvm-objcopy-18 /usr/local/bin/llvm-objcopy
           clang --version
           ld.lld --version
+          llvm-ar --version
 
       - name: Run host safety tests
         run: make -C host_test clean run
