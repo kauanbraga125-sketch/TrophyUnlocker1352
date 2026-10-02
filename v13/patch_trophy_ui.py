@@ -86,6 +86,6 @@ rep('''            if (requested && !strcmp(requested,"details")) screen=DETAILS
             if (requested && !strcmp(requested,"trophies")) screen=TROPHIES;
             if (requested && !strcmp(requested,"diagnostics")) screen=DIAGNOSTICS;''')
 
-s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.2')
-s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.2 - LISTA DE TROFEUS')
+s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.3')
+s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.3 - BANCO DE TROFEUS EM MEMORIA')
 path.write_text(s)
