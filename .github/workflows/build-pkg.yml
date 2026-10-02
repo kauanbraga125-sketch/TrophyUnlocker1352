@@ -15,8 +15,8 @@ jobs:
       - name: Build V11.3 Triangle probe
         shell: bash
         run: |
-          chmod +x ci/build_v11_3_probe.sh
-          ./ci/build_v11_3_probe.sh
+          chmod +x ci/build_v11_3_fixed.sh
+          ./ci/build_v11_3_fixed.sh
       - name: Upload V11.3 probe artifact
         uses: actions/upload-artifact@v4
         with:
