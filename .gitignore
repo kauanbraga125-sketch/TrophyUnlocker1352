@@ -1,0 +1,4 @@
+/.deps*/
+/build_v13/
+/dist_v13/
+*.log

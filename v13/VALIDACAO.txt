@@ -1,0 +1,11 @@
+V13 build local, 2026-10-02
+Base V12: 19cc8b7555ea27e0b20efc9743728da5d3621794
+PKG SHA-256: 0e888c5aa04ed5baa1aa43f90e826393d8be8777387c8c85d03b7f2fd318b38f
+Bytes: 6619136
+Host: 5 grupos de testes PASS (ASan/UBSan; leak detection desativada no sandbox).
+PKG: 28 OK, zero FAIL.
+Eboot extraido: identico ao build.
+Fontes .cpp/.h: identicas as copiadas para o build.
+libc.prx, libSceFios2.prx, right.sprx, VeraMono.ttf: identicos a V12 enviada.
+6 telas conferidas em SDL2 no computador, com arquivos ficticios exclusivos do preview.
+Execucao em PS4 13.52: pendente. Desbloqueio de trofeus: ainda nao integrado nesta UI.
