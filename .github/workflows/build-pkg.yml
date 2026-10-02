@@ -21,7 +21,8 @@ jobs:
         shell: bash
         run: |
           set -euxo pipefail
-          base64 -d source.b64 > /tmp/tu1352_source.zip
+          cat source_parts/source.part.* | base64 -d > /tmp/tu1352_source.zip
+          unzip -t /tmp/tu1352_source.zip
           unzip -o /tmp/tu1352_source.zip -d "$GITHUB_WORKSPACE"
           chmod +x scripts/*.sh || true
           find . -maxdepth 3 -type f | sort
