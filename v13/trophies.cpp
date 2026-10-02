@@ -19,7 +19,6 @@ static uint32_t rd32(const uint8_t* p) {
 }
 
 bool valid_np_communication_id(const std::string& value) {
-    // PS4 trophy sets use IDs such as NPWR12345_00.
     if (value.size() != 12 || value.compare(0, 4, "NPWR") || value[9] != '_') return false;
     for (size_t i = 4; i < 9; ++i) if (value[i] < '0' || value[i] > '9') return false;
     for (size_t i = 10; i < 12; ++i) if (value[i] < '0' || value[i] > '9') return false;
@@ -173,6 +172,98 @@ int query_trophy_database(const std::string& database_path,
     return rc;
 }
 
+#ifndef TU_HOST_TEST
+// The PS4 SQLite VFS is not reliable for querying trophy_local.db directly.
+// Apollo solves the same problem by first copying the database into memory.
+// We do the same thing here using SQLite's deserialize API. The original file
+// is never opened for writing and the in-memory copy is never written back.
+static int open_trophy_snapshot(const std::string& path,
+                                sqlite3** out_db,
+                                unsigned char** out_buffer,
+                                long long& out_size,
+                                std::string& detail) {
+    *out_db = nullptr;
+    *out_buffer = nullptr;
+    out_size = 0;
+
+    FILE* fp = fopen(path.c_str(), "rb");
+    if (!fp) {
+        detail = "Nao foi possivel abrir trophy_local.db para leitura.";
+        return SQLITE_CANTOPEN;
+    }
+    if (fseek(fp, 0, SEEK_END) != 0) {
+        fclose(fp);
+        detail = "Falha ao medir trophy_local.db.";
+        return SQLITE_IOERR;
+    }
+    long size = ftell(fp);
+    if (size <= 100 || size > 64L*1024L*1024L) {
+        fclose(fp);
+        char line[128];
+        snprintf(line,sizeof(line),"Tamanho inesperado do banco: %ld bytes.",size);
+        detail = line;
+        return SQLITE_NOTADB;
+    }
+    rewind(fp);
+
+    unsigned char* buffer = static_cast<unsigned char*>(sqlite3_malloc64(static_cast<sqlite3_uint64>(size)));
+    if (!buffer) {
+        fclose(fp);
+        detail = "Sem memoria para copiar trophy_local.db.";
+        return SQLITE_NOMEM;
+    }
+    size_t got = fread(buffer, 1, static_cast<size_t>(size), fp);
+    fclose(fp);
+    if (got != static_cast<size_t>(size)) {
+        sqlite3_free(buffer);
+        char line[160];
+        snprintf(line,sizeof(line),"Leitura incompleta do banco: %zu de %ld bytes.",got,size);
+        detail = line;
+        return SQLITE_IOERR_READ;
+    }
+    if (size < 16 || memcmp(buffer, "SQLite format 3\000", 16) != 0) {
+        sqlite3_free(buffer);
+        char line[160];
+        snprintf(line,sizeof(line),"Cabecalho do banco nao e SQLite valido (%ld bytes lidos).",size);
+        detail = line;
+        return SQLITE_NOTADB;
+    }
+
+    sqlite3* db = nullptr;
+    int rc = sqlite3_open(":memory:", &db);
+    if (rc != SQLITE_OK) {
+        sqlite3_free(buffer);
+        detail = db ? sqlite3_errmsg(db) : "Falha ao criar banco em memoria.";
+        if (db) sqlite3_close(db);
+        return rc;
+    }
+
+    rc = sqlite3_deserialize(db, "main", buffer,
+                             static_cast<sqlite3_int64>(size),
+                             static_cast<sqlite3_int64>(size),
+                             SQLITE_DESERIALIZE_READONLY);
+    if (rc != SQLITE_OK) {
+        detail = sqlite3_errmsg(db);
+        sqlite3_close(db);
+        sqlite3_free(buffer);
+        return rc;
+    }
+
+    *out_db = db;
+    *out_buffer = buffer;
+    out_size = size;
+    char line[160];
+    snprintf(line,sizeof(line),"Snapshot SQLite OK: %ld bytes.",size);
+    detail = line;
+    return SQLITE_OK;
+}
+
+static void close_trophy_snapshot(sqlite3* db, unsigned char* buffer) {
+    if (db) sqlite3_close(db);
+    if (buffer) sqlite3_free(buffer);
+}
+#endif
+
 static TrophyLoadResult load_for_game_internal(const Game& game, FileSystem& fs) {
     TrophyLoadResult result;
 #ifndef TU_HOST_TEST
@@ -187,27 +278,33 @@ static TrophyLoadResult load_for_game_internal(const Game& game, FileSystem& fs)
     char dbpath[128];
     snprintf(dbpath,sizeof(dbpath),"/user/home/%08x/trophy/db/trophy_local.db",unsigned(result.user_id));
     result.database_path = dbpath;
-#else
-    result.detail = "TU_HOST_TEST";
-    return result;
-#endif
+
     std::string np = find_np_communication_id(fs,game);
     sqlite3* db = nullptr;
-    int rc = sqlite3_open_v2(result.database_path.c_str(), &db, SQLITE_OPEN_READONLY, nullptr);
+    unsigned char* backing = nullptr;
+    long long snapshot_size = 0;
+    std::string snapshot_detail;
+    int rc = open_trophy_snapshot(result.database_path,&db,&backing,snapshot_size,snapshot_detail);
     if (rc != SQLITE_OK) {
         result.sqlite_status = rc;
         result.status = -EACCES;
-        result.detail = db ? sqlite3_errmsg(db) : "Nao foi possivel abrir trophy_local.db";
-        if (db) sqlite3_close(db);
+        result.detail = snapshot_detail;
         return result;
     }
-    result.sqlite_status = query_db(db,np,game.title,result.set,result.detail);
-    sqlite3_close(db);
+
+    std::string query_detail;
+    result.sqlite_status = query_db(db,np,game.title,result.set,query_detail);
+    close_trophy_snapshot(db,backing);
     if (result.sqlite_status == SQLITE_OK) {
         result.status = 0;
-        if (np.empty()) result.detail = "NPWR resolvido pelo titulo do conjunto local.";
-        else result.detail = "Trofeus carregados do banco local em modo somente leitura.";
-    } else result.status = -ENOENT;
+        result.detail = snapshot_detail + (np.empty() ? " NPWR resolvido pelo titulo local." : " Trofeus carregados em modo somente leitura.");
+    } else {
+        result.status = -ENOENT;
+        result.detail = snapshot_detail + " " + query_detail;
+    }
+#else
+    result.detail = "TU_HOST_TEST";
+#endif
     return result;
 }
 
@@ -216,13 +313,32 @@ TrophyLoadResult load_trophies(const std::string& np_communication_id) {
 #ifndef TU_HOST_TEST
     int32_t user = 0;
     result.user_status = sceUserServiceGetInitialUser(&user);
-    if (result.user_status < 0) { result.status=result.user_status; result.detail="Nao foi possivel identificar o usuario ativo."; return result; }
+    if (result.user_status < 0) {
+        result.status=result.user_status;
+        result.detail="Nao foi possivel identificar o usuario ativo.";
+        return result;
+    }
     result.user_id = uint32_t(user);
     char dbpath[128];
     snprintf(dbpath,sizeof(dbpath),"/user/home/%08x/trophy/db/trophy_local.db",unsigned(result.user_id));
     result.database_path=dbpath;
-    result.sqlite_status=query_trophy_database(result.database_path,np_communication_id,result.set,result.detail);
+
+    sqlite3* db = nullptr;
+    unsigned char* backing = nullptr;
+    long long snapshot_size = 0;
+    std::string snapshot_detail;
+    int rc = open_trophy_snapshot(result.database_path,&db,&backing,snapshot_size,snapshot_detail);
+    if (rc != SQLITE_OK) {
+        result.sqlite_status=rc;
+        result.status=-EACCES;
+        result.detail=snapshot_detail;
+        return result;
+    }
+    std::string query_detail;
+    result.sqlite_status=query_db(db,np_communication_id,"",result.set,query_detail);
+    close_trophy_snapshot(db,backing);
     result.status=result.sqlite_status == SQLITE_OK ? 0 : -ENOENT;
+    result.detail=result.sqlite_status == SQLITE_OK ? snapshot_detail + " Trofeus carregados em modo somente leitura." : snapshot_detail + " " + query_detail;
 #endif
     return result;
 }
