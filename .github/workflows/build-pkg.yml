@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker 13.52 PKG V4
+name: Build Trophy Unlocker 13.52 PKG V5
 
 on:
   push:
@@ -12,17 +12,18 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-      - name: Build V4
+      - name: Build V5 framebuffer UI
+        shell: bash
         run: |
-          chmod +x ci/build_v4.sh
-          ./ci/build_v4.sh
-      - name: Upload V4 artifacts
+          chmod +x ci/build_v5.sh
+          ./ci/build_v5.sh
+      - name: Upload V5 artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-PS4-V4
+          name: TrophyUnlocker1352-PS4-V5
           if-no-files-found: error
           retention-days: 7
           path: |
-            dist/Trophy_Unlocker_13.52_Manager_V4.pkg
+            dist/Trophy_Unlocker_13.52_Manager_V5.pkg
             dist/trophy_unlocker_1352.prx
             dist/SHA256SUMS.txt
