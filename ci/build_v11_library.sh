@@ -1,0 +1,108 @@
+#!/usr/bin/env bash
+set -euxo pipefail
+
+ROOT="$PWD"
+DEPS="$ROOT/.deps_v11"
+WORK="$ROOT/v11_work"
+DIST="$ROOT/dist_v11"
+OO_VERSION=v0.5.4
+OO_ASSET=toolchain-llvm-18.tar.gz
+
+rm -rf "$DEPS" "$WORK" "$DIST"
+mkdir -p "$DEPS" "$WORK" "$DIST"
+
+sudo apt-get update
+sudo apt-get install -y clang-18 lld-18 llvm-18 make curl tar unzip file
+sudo ln -sf /usr/bin/clang-18 /usr/local/bin/clang
+sudo ln -sf /usr/bin/clang++-18 /usr/local/bin/clang++
+sudo ln -sf /usr/bin/ld.lld-18 /usr/local/bin/ld.lld
+command -v docker
+
+cd "$DEPS"
+curl -fL --retry 5 --retry-all-errors "https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/${OO_VERSION}/${OO_ASSET}" -o "$OO_ASSET"
+echo "3c7cd5bb593ca74fa1c13fd59f3938dc0fc07985167f7275063019e63abe4526  $OO_ASSET" | sha256sum -c -
+tar xzf "$OO_ASSET"
+OO_PS4_TOOLCHAIN="$(find "$DEPS" -type f -name link.x -printf '%h\n' | head -n1)"
+export OO_PS4_TOOLCHAIN
+chmod +x "$OO_PS4_TOOLCHAIN/bin/linux/"* || true
+
+AUTHINFO="$(grep '^AUTHINFO' "$OO_PS4_TOOLCHAIN/samples/piglet/Makefile" | sed 's/.*:= *"//; s/"$//')"
+test -n "$AUTHINFO"
+
+cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2" "$WORK/app"
+cd "$WORK/app"
+rm -f SDL2/*.cpp SDL2/*.h
+cp "$ROOT/v11/main.cpp" SDL2/main.cpp
+
+cat > Makefile <<EOF
+TITLE       := Trophy Unlocker 13.52 V11 Library
+VERSION     := 01.00
+TITLE_ID    := BREW13529
+CONTENT_ID  := IV0000-BREW13529_00-TROPHYLIBRARY110
+LIBS        := -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2 -lSDL2_image
+EXTRAFLAGS  := -fexceptions -fcxx-exceptions
+ASSETS      := \$(wildcard assets/**/*)
+LIBMODULES  := \$(wildcard sce_module/*)
+TOOLCHAIN   := \$(OO_PS4_TOOLCHAIN)
+PROJDIR     := SDL2
+INTDIR      := \$(PROJDIR)/x64/Debug
+CPPFILES    := \$(wildcard \$(PROJDIR)/*.cpp)
+OBJS        := \$(patsubst \$(PROJDIR)/%.cpp,\$(INTDIR)/%.o,\$(CPPFILES))
+CXXFLAGS    := --target=x86_64-pc-freebsd12-elf -fPIC -funwind-tables -c \$(EXTRAFLAGS) -isysroot \$(TOOLCHAIN) -isystem \$(TOOLCHAIN)/include -isystem \$(TOOLCHAIN)/include/c++/v1
+LDFLAGS     := -m elf_x86_64 -pie --script \$(TOOLCHAIN)/link.x --eh-frame-hdr -L\$(TOOLCHAIN)/lib \$(LIBS) \$(TOOLCHAIN)/lib/crt1.o
+_unused     := \$(shell mkdir -p \$(INTDIR))
+CCX         := clang++
+LD          := ld.lld
+CDIR        := linux
+AUTHINFO    := $AUTHINFO
+
+all: \$(CONTENT_ID).pkg
+
+\$(CONTENT_ID).pkg: pkg.gp4
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core pkg_build \$< .
+
+pkg.gp4: eboot.bin sce_sys/about/right.sprx sce_sys/param.sfo sce_sys/icon0.png \$(LIBMODULES) \$(ASSETS)
+	\$(TOOLCHAIN)/bin/\$(CDIR)/create-gp4 -out \$@ --content-id=\$(CONTENT_ID) --files "\$^"
+
+sce_sys/param.sfo: Makefile
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_new \$@
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ APP_TYPE --type Integer --maxsize 4 --value 1
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ APP_VER --type Utf8 --maxsize 8 --value '\$(VERSION)'
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ ATTRIBUTE --type Integer --maxsize 4 --value 32
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ CATEGORY --type Utf8 --maxsize 4 --value 'gde'
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ CONTENT_ID --type Utf8 --maxsize 48 --value '\$(CONTENT_ID)'
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ DOWNLOAD_DATA_SIZE --type Integer --maxsize 4 --value 0
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ SYSTEM_VER --type Integer --maxsize 4 --value 0
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ TITLE --type Utf8 --maxsize 128 --value '\$(TITLE)'
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ TITLE_ID --type Utf8 --maxsize 12 --value '\$(TITLE_ID)'
+	\$(TOOLCHAIN)/bin/\$(CDIR)/PkgTool.Core sfo_setentry \$@ VERSION --type Utf8 --maxsize 8 --value '\$(VERSION)'
+
+eboot.bin: \$(INTDIR) \$(OBJS)
+	\$(LD) \$(INTDIR)/*.o -o \$(INTDIR)/\$(PROJDIR).elf \$(LDFLAGS)
+	\$(TOOLCHAIN)/bin/\$(CDIR)/create-fself -in=\$(INTDIR)/\$(PROJDIR).elf -out=\$(INTDIR)/\$(PROJDIR).oelf --eboot "eboot.bin" --paid 0x3800000000000011 --authinfo \$(AUTHINFO)
+
+\$(INTDIR)/%.o: \$(PROJDIR)/%.cpp
+	\$(CCX) \$(CXXFLAGS) -o \$@ \$<
+
+clean:
+	rm -f \$(CONTENT_ID).pkg pkg.gp4 sce_sys/param.sfo eboot.bin \$(INTDIR)/*.o \$(INTDIR)/*.elf \$(INTDIR)/*.oelf
+EOF
+
+TOOL="$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core"
+mv "$TOOL" "$TOOL.real"
+docker pull mcr.microsoft.com/dotnet/core/runtime:3.1-bionic
+cat > "$TOOL" <<EOF
+#!/usr/bin/env bash
+set -e
+exec docker run --rm --user "$(id -u):$(id -g)" -e DOTNET_ROLL_FORWARD=Minor -e DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1 -v /home/runner/work:/home/runner/work -w "\$PWD" mcr.microsoft.com/dotnet/core/runtime:3.1-bionic "$OO_PS4_TOOLCHAIN/bin/linux/PkgTool.Core.real" "\$@"
+EOF
+chmod +x "$TOOL"
+
+make clean || true
+make
+PKG="IV0000-BREW13529_00-TROPHYLIBRARY110.pkg"
+test -s "$PKG"
+"$TOOL" pkg_validate --verbose "$PKG"
+cp "$PKG" "$DIST/Trophy_Unlocker_13.52_V11_LIBRARY.pkg"
+sha256sum "$DIST/Trophy_Unlocker_13.52_V11_LIBRARY.pkg" > "$DIST/SHA256SUMS.txt"
+ls -lh "$DIST"
