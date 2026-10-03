@@ -6,7 +6,7 @@ on:
   workflow_dispatch:
 
 permissions:
-  contents: read
+  contents: write
 
 jobs:
   build:
@@ -27,3 +27,14 @@ jobs:
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
             dist_v13/param-sfo.txt
+      - name: Publish validated PKG
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v13.10-professional
+          name: Trophy Unlocker V13.10 Professional
+          prerelease: true
+          files: |
+            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional.pkg
+            dist_v13/SHA256SUMS.txt
+            dist_v13/pkg-validation.txt
+            dist_v13/host-tests.txt
