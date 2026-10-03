@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.3 DB Memoria
+name: Build Trophy Unlocker V13.9 Installed Carousel
 
 on:
   push:
-    branches: [fix/v13-game-discovery, feature/v13.2-trophy-list]
+    branches: [fix/v13.9-installed-carousel]
   workflow_dispatch:
 
 permissions:
@@ -14,15 +14,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.3 from tracked source
+      - name: Test and build V13.9 from tracked source
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.3-DB-Memoria
+          name: TrophyUnlocker1352-V13.9-Installed-Carousel
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_3_DB_Memoria.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_9_Installed_Carousel.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
