@@ -50,22 +50,22 @@ bool valid_png(const std::vector<uint8_t>& b) {
     return be(8) == 13 && be(16) > 0 && be(20) > 0 && be(16) <= 2048 && be(20) <= 2048;
 }
 std::string game_status(const Game& g) {
-    if (g.package) return "Pacote do jogo acessivel";
-    if (g.metadata) return "Dados do jogo encontrados";
-    if (!g.manual) return "Pasta encontrada - pacote nao confirmado";
-    return "CUSA manual - acesso nao confirmado";
+    if (g.package) return "Jogo instalado";
+    if (g.metadata) return "Metadados encontrados";
+    return "Nao confirmado como instalado";
 }
+
 void Library::enrich(Game& g) {
+    // IMPORTANT: discovery is already complete before enrich(). These paths
+    // only enrich an installed CUSA with title/icon/metadata; they never create
+    // a new library entry.
     std::vector<std::string> bases;
     if (!g.path.empty()) bases.push_back(g.path);
-    bases.push_back("/user/app/"+g.id);
-    bases.push_back("/mnt/ext0/user/app/"+g.id);
-    bases.push_back("/mnt/ext1/user/app/"+g.id);
     bases.push_back("/user/appmeta/"+g.id);
     bases.push_back("/user/appmeta/external/"+g.id);
     bases.push_back("/system_data/priv/appmeta/"+g.id);
+
     for (const std::string& base : bases) {
-        if (fs.exists(base+"/app.pkg")) { g.package = true; g.path = base; }
         const char* sfo_names[] = {"/param.sfo", "/sce_sys/param.sfo"};
         for (const char* suffix : sfo_names) {
             std::vector<uint8_t> bytes;
@@ -74,7 +74,6 @@ void Library::enrich(Game& g) {
             if (parse_sfo(bytes, id, title) && (id.empty() || id == g.id)) {
                 g.metadata = true;
                 if (!title.empty()) g.title = title;
-                if (g.path.empty()) g.path = base;
             }
         }
         if (g.icon.empty()) {
@@ -85,26 +84,36 @@ void Library::enrich(Game& g) {
     }
     if (g.title.empty()) g.title = g.id;
 }
+
 size_t Library::merge(const Game& value) {
     for (size_t i = 0; i < games.size(); ++i) if (games[i].id == value.id) {
         Game& g = games[i];
-        if (g.path.empty() || value.package || (value.manual && !value.path.empty() && !g.package)) g.path = value.path;
+        if (g.path.empty() || value.package) g.path = value.path;
         if (g.icon.empty()) g.icon = value.icon;
         if (!value.title.empty() && value.title != value.id) g.title = value.title;
-        g.package |= value.package; g.metadata |= value.metadata; g.manual |= value.manual;
+        g.package |= value.package; g.metadata |= value.metadata;
         return i;
     }
     if (games.size() >= 512) return size_t(-1);
     games.push_back(value); return games.size()-1;
 }
+
 void Library::begin_scan() {
     games.clear(); roots.clear();
     root_index = 0; enrich_index = 0; scanning = true;
 }
+
 bool Library::scan_step() {
     if (!scanning) return false;
-    const char* paths[] = {"/user/app", "/mnt/ext0/user/app", "/mnt/ext1/user/app",
-        "/user/appmeta", "/user/appmeta/external", "/system_data/priv/appmeta"};
+
+    // V13.9: these are the ONLY discovery roots. appmeta and trophy_local.db
+    // are deliberately excluded so stale/uninstalled trophy sets cannot appear.
+    const char* paths[] = {
+        "/user/app",
+        "/mnt/ext0/user/app",
+        "/mnt/ext1/user/app"
+    };
+
     if (root_index < sizeof(paths)/sizeof(paths[0])) {
         const char* root = paths[root_index++];
         std::vector<DirEntry> entries;
@@ -112,94 +121,62 @@ bool Library::scan_step() {
         if (!status.status) for (const DirEntry& ent : entries) {
             if (!is_cusa(ent.name) || (ent.type != 4 && ent.type != 0 && ent.type != 10)) continue;
             ++status.matches;
-            Game game; game.id = ent.name; game.path = join_path(root, ent.name);
-            // A directory alone does not prove that an installed package is readable.
-            game.metadata = std::string(root).find("appmeta") != std::string::npos;
+            Game game;
+            game.id = ent.name;
+            game.path = join_path(root, ent.name);
+            game.package = true;   // presence in an installed-app root is authoritative
+            game.metadata = false;
+            game.manual = false;
             merge(game);
         }
         roots.push_back(status);
         if (root_index == sizeof(paths)/sizeof(paths[0])) {
-            for (const Game& manual : manuals) {
-                Game game; game.id = manual.id; game.path = manual.path; game.manual = true;
-                merge(game);
-            }
             std::sort(games.begin(), games.end(), [](const Game& a, const Game& b) { return a.id < b.id; });
         }
         return true;
     }
-    if (enrich_index < games.size()) { enrich(games[enrich_index++]); return true; }
-    scanning = false; return false;
+
+    if (enrich_index < games.size()) {
+        enrich(games[enrich_index++]);
+        return true;
+    }
+    scanning = false;
+    return false;
 }
+
 void Library::scan() {
     begin_scan(); while (scan_step()) {}
 }
+
+// Manual lookup remains available to diagnostics/source compatibility, but it
+// is intentionally NOT merged into the V13.9 main installed-games carousel.
 int Library::add_id(const std::string& id) {
     if (!is_cusa(id)) return -EINVAL;
-    Game game; game.id = id; game.manual = true;
-    enrich(game);
-    size_t index = merge(game);
-    if (index == size_t(-1)) return -ENOSPC;
-    auto found = std::find_if(manuals.begin(), manuals.end(), [&id](const Game& g) { return g.id == id; });
-    if (found == manuals.end()) manuals.push_back(game);
-    return int(index);
+    for (size_t i=0; i<games.size(); ++i) if (games[i].id == id) return int(i);
+    return -ENOENT;
 }
+
 int Library::add_folder(const std::string& path) {
     if (!valid_path(path)) return -EINVAL;
-    std::vector<DirEntry> entries;
-    int status = fs.list(path, entries);
-    if (status) return status;
-    std::string leaf = path.substr(path.find_last_of('/')+1), id, title;
-    bool found_sfo = false;
-    for (const char* suffix : {"/param.sfo", "/sce_sys/param.sfo"}) {
-        std::vector<uint8_t> bytes; std::string candidate, caption;
-        if (fs.read(path+suffix, 65536, bytes)) continue;
-        if (parse_sfo(bytes, candidate, caption) && is_cusa(candidate)) {
-            id = candidate; title = caption; found_sfo = true; break;
-        }
-    }
-    if (id.empty() && is_cusa(leaf)) id = leaf;
-    if (!is_cusa(id) || (is_cusa(leaf) && leaf != id)) return -EINVAL;
-    Game game; game.id = id; game.title = title; game.path = path;
-    game.metadata = found_sfo; game.manual = true;
-    enrich(game);
-    size_t index = merge(game);
-    if (index == size_t(-1)) return -ENOSPC;
-    auto found = std::find_if(manuals.begin(), manuals.end(), [&id](const Game& g) { return g.id == id; });
-    if (found == manuals.end()) manuals.push_back(game); else *found = game;
-    return int(index);
+    for (size_t i=0; i<games.size(); ++i) if (games[i].path == path) return int(i);
+    return -ENOENT;
 }
+
 int Library::load_manual() {
-    std::vector<uint8_t> bytes;
-    int status = fs.read("/data/TrophyUnlocker1352/manual-games.txt", 65536, bytes);
-    if (status) return status;
-    std::vector<Game> loaded;
-    std::string text(bytes.begin(), bytes.end()); size_t at = 0;
-    while (at < text.size()) {
-        size_t end = text.find('\n', at);
-        if (end == std::string::npos) end = text.size();
-        std::string line = text.substr(at, end-at);
-        if (!line.empty() && line.back() == '\r') line.pop_back();
-        size_t tab = line.find('\t');
-        Game game; game.id = line.substr(0, tab); game.manual = true;
-        if (tab != std::string::npos) game.path = line.substr(tab+1);
-        if (!is_cusa(game.id) || (!game.path.empty() && !valid_path(game.path)) || loaded.size() >= 512) return -EINVAL;
-        // Persist identity and chosen path, never stale 'installed' or metadata flags.
-        loaded.push_back(game); at = end+1;
-    }
-    manuals = loaded; return 0;
+    manuals.clear();
+    return 0;
 }
+
 int Library::save_manual() {
-    std::string text;
-    for (const Game& game : manuals) text += game.id+"\t"+game.path+"\n";
-    if (text.size() > 65536) return -EFBIG;
-    return fs.save("/data/TrophyUnlocker1352/manual-games.txt", text);
+    return 0;
 }
+
 std::string Library::diagnostic(const AccessResult& a) const {
-    char line[200];
-    snprintf(line, sizeof(line), "Trophy Unlocker V13.1\nGoldHEN requested=%d sdk_raw=%lld sdk_CF=%llu\naccess_sent=%d access_raw=%lld access_CF=%llu\n", int(a.attempted), (long long)a.sdk, (unsigned long long)a.sdk_carry, int(a.jailbreak_attempted), (long long)a.jailbreak, (unsigned long long)a.jailbreak_carry);
+    char line[220];
+    snprintf(line, sizeof(line), "Trophy Unlocker V13.9 Installed Carousel\nGoldHEN requested=%d sdk_raw=%lld sdk_CF=%llu\naccess_sent=%d access_raw=%lld access_CF=%llu\n", int(a.attempted), (long long)a.sdk, (unsigned long long)a.sdk_carry, int(a.jailbreak_attempted), (long long)a.jailbreak, (unsigned long long)a.jailbreak_carry);
     std::string result = line;
     for (const RootResult& root : roots) {
-        snprintf(line, sizeof(line), "%s status=%d CUSA=%d\n", root.path.c_str(), root.status, root.matches);
+        snprintf(line, sizeof(line), "%s status=%d installed_CUSA=%d\n", root.path.c_str(), root.status, root.matches);
         result += line;
     }
     for (const Game& game : games) result += game.id+" | "+game_status(game)+" | "+game.path+"\n";
