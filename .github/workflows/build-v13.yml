@@ -1,4 +1,4 @@
-name: Build Trophy Unlocker V13.10 Professional
+name: Build Trophy Unlocker V13.10 Professional Audio
 
 on:
   push:
@@ -14,15 +14,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.10 professional package
+      - name: Test and build V13.10 professional audio package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.10-Professional
+          name: TrophyUnlocker1352-V13.10-Professional-Audio
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional_Audio.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
@@ -30,11 +30,11 @@ jobs:
       - name: Publish validated PKG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v13.10-professional
-          name: Trophy Unlocker V13.10 Professional
+          tag_name: v13.10-professional-audio
+          name: Trophy Unlocker V13.10 Professional Audio
           prerelease: true
           files: |
-            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional_Audio.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/pkg-validation.txt
             dist_v13/host-tests.txt
