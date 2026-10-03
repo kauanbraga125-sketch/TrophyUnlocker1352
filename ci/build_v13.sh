@@ -21,7 +21,7 @@ export LD_LIBRARY_PATH="$DEPS/legacy-ssl/usr/lib/x86_64-linux-gnu${LD_LIBRARY_PA
 export DOTNET_BUNDLE_EXTRACT_BASE_DIR="$DEPS/dotnet-bundle"
 export DOTNET_SYSTEM_GLOBALIZATION_INVARIANT=1
 
-# libSQLite-ps4 expects the common OpenOrbis library build rules used by Apollo.
+# Common OpenOrbis build rules used by Apollo's libraries.
 OOSDK_LIB_COMMIT="5b86e2d25e674f64b8dce9aee319a9f8aa6a09ea"
 curl -fLsS --retry 3 \
   "https://raw.githubusercontent.com/bucanero/oosdk_libraries/$OOSDK_LIB_COMMIT/build_rules.mk" \
@@ -36,5 +36,16 @@ git -C "$DEPS/libSQLite-ps4" fetch -q origin "$SQLITE_COMMIT"
 git -C "$DEPS/libSQLite-ps4" checkout -q --detach "$SQLITE_COMMIT"
 make -C "$DEPS/libSQLite-ps4" clean >/dev/null || true
 make -C "$DEPS/libSQLite-ps4" AR=llvm-ar-18 install
+
+# V13.6.1 needs the same libJBC primitive used by Apollo/VSH utilities to
+# prepare VSH credentials and expose the protected /dev nodes inside sandbox.
+JBC_COMMIT="835fe016ff0ae5dd89b9249f39cc0fe093fd07dd"
+if [[ ! -d "$DEPS/ps4-libjbc/.git" ]]; then
+  git clone -q https://github.com/bucanero/ps4-libjbc.git "$DEPS/ps4-libjbc"
+fi
+git -C "$DEPS/ps4-libjbc" fetch -q origin "$JBC_COMMIT"
+git -C "$DEPS/ps4-libjbc" checkout -q --detach "$JBC_COMMIT"
+make -C "$DEPS/ps4-libjbc" clean >/dev/null || true
+make -C "$DEPS/ps4-libjbc" AR=llvm-ar-18 install
 
 bash "$ROOT/v13/build.sh"
