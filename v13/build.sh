@@ -10,21 +10,22 @@ cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/assets" "$WORK/"
 cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/sce_module" "$WORK/"
 cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/sce_sys" "$WORK/"
 
-# Professional branding: menu icon + background. The app reuses pic0.png internally.
-mkdir -p "$WORK/sce_sys"
+# Professional branding: PS4 shell art + a normal runtime copy for the in-app UI.
+mkdir -p "$WORK/sce_sys" "$WORK/assets/images"
 rsvg-convert -w 512 -h 512 "$ROOT/v13/branding/icon0.svg" -o "$WORK/sce_sys/icon0-rgba.png"
 rsvg-convert -w 1920 -h 1080 "$ROOT/v13/branding/pic0.svg" -o "$WORK/sce_sys/pic0-rgba.png"
 convert "$WORK/sce_sys/icon0-rgba.png" -alpha off -type TrueColor PNG24:"$WORK/sce_sys/icon0.png"
 convert "$WORK/sce_sys/pic0-rgba.png" -alpha off -type TrueColor PNG24:"$WORK/sce_sys/pic0.png"
+cp "$WORK/sce_sys/pic0.png" "$WORK/assets/images/background.png"
 rm -f "$WORK/sce_sys/icon0-rgba.png" "$WORK/sce_sys/pic0-rgba.png"
-python3 - "$WORK/sce_sys/icon0.png" 512 512 "$WORK/sce_sys/pic0.png" 1920 1080 <<'PY'
+python3 - "$WORK/sce_sys/icon0.png" 512 512 "$WORK/sce_sys/pic0.png" 1920 1080 "$WORK/assets/images/background.png" <<'PY'
 import struct, sys
-for path, ew, eh in ((sys.argv[1], int(sys.argv[2]), int(sys.argv[3])), (sys.argv[4], int(sys.argv[5]), int(sys.argv[6]))):
+for path, ew, eh in ((sys.argv[1], int(sys.argv[2]), int(sys.argv[3])), (sys.argv[4], int(sys.argv[5]), int(sys.argv[6])), (sys.argv[7], 1920, 1080)):
     with open(path, 'rb') as f: sig=f.read(24)
     if sig[:8] != b'\x89PNG\r\n\x1a\n': raise SystemExit(f'Not a PNG: {path}')
     w,h=struct.unpack('>II',sig[16:24])
     if (w,h)!=(ew,eh): raise SystemExit(f'Bad dimensions for {path}: {w}x{h}, expected {ew}x{eh}')
-    print(f'[OK] branding {path}: {w}x{h}')
+    print(f'[OK] visual asset {path}: {w}x{h}')
 PY
 
 # Audio assets are generated deterministically during the build.
@@ -40,6 +41,7 @@ python3 "$ROOT/v13/patch_audio.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1311_fixes.py" "$WORK/SDL2"
 python3 "$ROOT/v13/patch_v1312_readonly.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1313_visual.py" "$WORK/SDL2/main.cpp"
+python3 "$ROOT/v13/patch_v1314_clean.py" "$WORK/SDL2/main.cpp"
 cp "$ROOT/v13/Makefile" "$WORK/Makefile"
 make -C "$WORK" clean
 make -C "$WORK" -j2
@@ -49,6 +51,6 @@ PKG="$WORK/IV0000-BREW13533_00-TROPHYV12UI01200.pkg"
 if rg -i '\[(FAIL|ERROR)\]' "$DIST/pkg-validation.txt"; then exit 1; fi
 test "$(rg -c '^\[OK\]' "$DIST/pkg-validation.txt")" -ge 28
 "$TOOL" sfo_listentries "$WORK/sce_sys/param.sfo" > "$DIST/param-sfo.txt"
-OUT="Trophy_Unlocker_13.52_V13_13_Covers_Background.pkg"
+OUT="Trophy_Unlocker_13.52_V13_14_Clean_Library.pkg"
 cp "$PKG" "$DIST/$OUT"
 (cd "$DIST" && sha256sum "$OUT" > SHA256SUMS.txt)
