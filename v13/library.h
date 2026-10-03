@@ -13,10 +13,17 @@ bool parse_sfo(const std::vector<uint8_t>&, std::string& id, std::string& title)
 bool valid_png(const std::vector<uint8_t>&);
 std::string game_status(const Game&);
 class Library {
+    struct CachedMetadata {
+        std::string id, title, icon;
+    };
     FileSystem& fs;
     void enrich(Game&);
     size_t merge(const Game&);
+    void load_metadata_cache();
+    void apply_metadata_cache(Game&);
+    void save_metadata_cache();
     std::vector<Game> manuals;
+    std::vector<CachedMetadata> metadata_cache;
     size_t root_index = 0, enrich_index = 0;
     bool scanning = false;
 public:
