@@ -1,0 +1,29 @@
+name: Build V13.17 Fast Start Cover Fill
+
+on:
+  push:
+    branches: [perf/v13.17-fast-start-cover-fill]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build and validate V13.17
+        run: bash ci/build_v13.sh
+      - uses: actions/upload-artifact@v4
+        with:
+          name: TrophyUnlocker1352-V13.17-Fast-Start-Cover-Fill
+          if-no-files-found: error
+          retention-days: 30
+          path: |
+            dist_v13/Trophy_Unlocker_13.52_V13_17_Fast_Start_Cover_Fill.pkg
+            dist_v13/SHA256SUMS.txt
+            dist_v13/host-tests.txt
+            dist_v13/pkg-validation.txt
+            dist_v13/param-sfo.txt
