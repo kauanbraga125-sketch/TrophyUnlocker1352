@@ -11,11 +11,11 @@ def rep(old, new):
         raise SystemExit('patch anchor not found: ' + old[:80])
     s = s.replace(old, new, 1)
 
-rep('#include "library.h"\n', '#include "library.h"\n#include "trophies.h"\n')
+rep('#include "library.h"\n', '#include "library.h"\n#include "trophies.h"\n#include "trophy_mount.h"\n')
 rep('enum Screen { LIBRARY, DETAILS, BROWSER, CUSA_INPUT, DIAGNOSTICS };',
     'enum Screen { LIBRARY, DETAILS, TROPHIES, BROWSER, CUSA_INPUT, DIAGNOSTICS };')
 rep('int manual_load=-2, diagnostic_save=-2;\n',
-    'int manual_load=-2, diagnostic_save=-2;\n    tu::TrophyLoadResult trophy_result;\n    int trophy_selected=0;\n')
+    'int manual_load=-2, diagnostic_save=-2;\n    tu::TrophyLoadResult trophy_result;\n    tu::TrophyMountProbe trophy_probe;\n    int trophy_selected=0;\n')
 
 rep('''            } else if (screen == DETAILS) {
                 if (key == 1) screen=LIBRARY;
@@ -26,6 +26,7 @@ rep('''            } else if (screen == DETAILS) {
                 else if (key == 0 && !library.games.empty()) {
                     message="Lendo os trofeus locais deste jogo...";
                     trophy_result=tu::load_trophies_for_game(library.games[selected],fs);
+                    trophy_probe=tu::TrophyMountProbe();
                     trophy_selected=0;
                     if (!trophy_result.status) {
                         screen=TROPHIES;
@@ -41,6 +42,14 @@ rep('''            } else if (screen == DETAILS) {
                 if (key == 13 && n) trophy_selected=(trophy_selected+n-1)%n;
                 else if (key == 14 && n) trophy_selected=(trophy_selected+1)%n;
                 else if (key == 1) screen=DETAILS;
+                else if (key == 2 && !trophy_result.set.np_communication_id.empty()) {
+                    message="Testando credenciais, dispositivos e montagem protegida...";
+                    trophy_probe=tu::probe_trophy_container(trophy_result.user_id,trophy_result.set.np_communication_id);
+                    if (!trophy_probe.status)
+                        message="Container de trofeus OK: montagem protegida validada sem alterar trofeus.";
+                    else
+                        message="Teste interrompido em "+trophy_probe.stage+": "+trophy_probe.detail;
+                }
             } else if (screen == BROWSER) {''')
 
 rep('''                text("Esta etapa identifica jogos e seus arquivos.",645,701,1100,2);
@@ -48,7 +57,7 @@ rep('''                text("Esta etapa identifica jogos e seus arquivos.",645,7
             }
             text("O voltar   QUADRADO procurar pasta do jogo",80,977,1780,2);
         } else if (screen == BROWSER) {''', '''                text("Jogo identificado. Agora podemos consultar o banco local de trofeus.",645,701,1100,2);
-                text("X  Abrir lista de trofeus (modo somente leitura)",645,748,1100,2);
+                text("X  Abrir lista de trofeus",645,748,1100,2);
             }
             text("X trofeus   O voltar   QUADRADO procurar pasta do jogo",80,977,1780,2);
         } else if (screen == TROPHIES) {
@@ -77,8 +86,17 @@ rep('''                text("Esta etapa identifica jogos e seus arquivos.",645,7
                 text("Descricao:",1260,493,540,2);
                 text(tr.description.empty() ? "Sem descricao" : tr.description,1260,540,540,2);
             }
-            text("Leitura segura: esta versao nao altera trophy_local.db.",1260,800,540,2);
-            text("CIMA/BAIXO escolher   O voltar",80,977,1780,2);
+            text("QUADRADO = testar trophy.img (sem desbloquear)",1260,680,540,2);
+            if (!trophy_probe.stage.empty()) {
+                text("Ultimo teste: "+trophy_probe.stage,1260,735,540,2);
+                char probe_line[160];
+                snprintf(probe_line,sizeof(probe_line),"status=%d  mount=%d  decrypt=%d",trophy_probe.status,trophy_probe.mount_status,trophy_probe.decrypt_status);
+                text(probe_line,1260,780,540,2);
+                text(trophy_probe.detail,1260,825,540,2);
+            } else {
+                text("Ainda nao testado.",1260,750,540,2);
+            }
+            text("CIMA/BAIXO escolher   QUADRADO testar container   O voltar",80,977,1780,2);
         } else if (screen == BROWSER) {''')
 
 rep('''            if (requested && !strcmp(requested,"details")) screen=DETAILS;
@@ -86,6 +104,6 @@ rep('''            if (requested && !strcmp(requested,"details")) screen=DETAILS
             if (requested && !strcmp(requested,"trophies")) screen=TROPHIES;
             if (requested && !strcmp(requested,"diagnostics")) screen=DIAGNOSTICS;''')
 
-s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.3')
-s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.3 - BANCO DE TROFEUS EM MEMORIA')
+s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.6.1')
+s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.6.1 - MONTAGEM PROTEGIDA SEGURA')
 path.write_text(s)
