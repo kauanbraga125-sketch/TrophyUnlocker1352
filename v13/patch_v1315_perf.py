@@ -108,7 +108,11 @@ static SDL_Texture* cached_cover_texture(tu::FileSystem& fs,const std::string& p
         if (cover_cache[oldest].texture) SDL_DestroyTexture(cover_cache[oldest].texture);
         cover_cache.erase(cover_cache.begin()+oldest);
     }
-    cover_cache.push_back({path,texture,cover_stamp});
+    CoverCacheEntry entry;
+    entry.path=path;
+    entry.texture=texture;
+    entry.stamp=cover_stamp;
+    cover_cache.push_back(entry);
     return texture;
 }
 
