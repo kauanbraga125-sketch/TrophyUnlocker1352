@@ -1,0 +1,45 @@
+name: Export V13.6.2 Packager
+
+on:
+  push:
+    branches: [fix/v13.6.2-trophydata-api]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  export:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - name: Download pinned OpenOrbis toolchain
+        run: |
+          set -euxo pipefail
+          curl -fLsS --retry 3 https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.4/toolchain-llvm-18.tar.gz -o /tmp/toolchain.tar.gz
+          echo '3c7cd5bb593ca74fa1c13fd59f3938dc0fc07985167f7275063019e63abe4526  /tmp/toolchain.tar.gz' | sha256sum -c -
+          mkdir -p /tmp/oo
+          tar xzf /tmp/toolchain.tar.gz -C /tmp/oo
+      - name: Collect only packaging runtime and V13 assets
+        run: |
+          set -euxo pipefail
+          TC=/tmp/oo/OpenOrbis/PS4Toolchain
+          OUT=/tmp/v1362-packager
+          mkdir -p "$OUT/bin/linux" "$OUT/sample"
+          cp "$TC/bin/linux/PkgTool.Core" "$OUT/bin/linux/"
+          cp "$TC/bin/linux/create-gp4" "$OUT/bin/linux/"
+          cp -a "$TC/samples/SDL2/assets" "$OUT/sample/"
+          cp -a "$TC/samples/SDL2/sce_module" "$OUT/sample/"
+          cp -a "$TC/samples/SDL2/sce_sys" "$OUT/sample/"
+          chmod +x "$OUT/bin/linux/PkgTool.Core" "$OUT/bin/linux/create-gp4"
+          curl -fLsS --retry 3 https://archive.ubuntu.com/ubuntu/pool/main/o/openssl/libssl1.1_1.1.1f-1ubuntu2.24_amd64.deb -o /tmp/libssl1.1.deb
+          mkdir -p "$OUT/legacy-ssl"
+          dpkg-deb -x /tmp/libssl1.1.deb "$OUT/legacy-ssl"
+          find "$OUT" -maxdepth 4 -type f -printf '%P\n' | sort > "$OUT/FILES.txt"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: v1362-openorbis-packager
+          retention-days: 7
+          if-no-files-found: error
+          path: /tmp/v1362-packager
