@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.13 Covers Background
+name: Build Trophy Unlocker V13.14 Clean Library
 
 on:
   push:
-    branches: [style/v13.13-covers-background]
+    branches: [style/v13.14-clean-library]
   workflow_dispatch:
 
 permissions:
@@ -14,27 +14,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.13 visual package
+      - name: Test and build V13.14 clean library package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.13-Covers-Background
+          name: TrophyUnlocker1352-V13.14-Clean-Library
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_13_Covers_Background.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_14_Clean_Library.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
             dist_v13/param-sfo.txt
-      - name: Publish validated visual PKG
+      - name: Publish validated clean UI PKG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v13.13-covers-background
-          name: Trophy Unlocker V13.13 Covers Background
+          tag_name: v13.14-clean-library
+          name: Trophy Unlocker V13.14 Clean Library
           prerelease: true
           files: |
-            dist_v13/Trophy_Unlocker_13.52_V13_13_Covers_Background.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_14_Clean_Library.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/pkg-validation.txt
             dist_v13/host-tests.txt
