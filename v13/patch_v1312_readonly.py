@@ -41,9 +41,10 @@ rep('''            } else if (screen == BROWSER) {
 rep('            text("X desbloquear   CIMA/BAIXO escolher   O voltar",80,977,1780,2);',
     '            text("X desbloquear   TRIANGULO diagnostico npbind   CIMA/BAIXO escolher   O voltar",80,977,1780,2);')
 
-rep('''        } else if (screen == BROWSER) {
-            fill({70,160,1180,750},18,24,35); border({70,160,1180,750});''',
-'''        } else if (screen == NP_DIAGNOSTIC) {
+rep('''            text("X vincular   CIMA/BAIXO escolher   ESQ/DIR pagina   O voltar",80,977,1780,2);
+        } else if (screen == BROWSER) {''',
+'''            text("X vincular   CIMA/BAIXO escolher   ESQ/DIR pagina   O voltar",80,977,1780,2);
+        } else if (screen == NP_DIAGNOSTIC) {
             fill({70,160,1780,750},18,24,35); border({70,160,1780,750});
             text("DIAGNOSTICO NPBIND - SOMENTE LEITURA",105,187,1640,0);
             text("Mostra NPWR, cabecalho, entradas e NP Service Label sem alterar arquivos.",105,245,1640,2);
@@ -51,8 +52,7 @@ rep('''        } else if (screen == BROWSER) {
             for(size_t i=0;i<np_diag.lines.size() && i<15;++i,y+=40)
                 text(np_diag.lines[i],110,y,1640,2);
             text("TRIANGULO reler   O voltar aos trofeus",80,977,1780,2);
-        } else if (screen == BROWSER) {
-            fill({70,160,1180,750},18,24,35); border({70,160,1180,750});''')
+        } else if (screen == BROWSER) {''')
 
 s=s.replace('Trophy Unlocker V13.10','Trophy Unlocker V13.12 DIAG')
 path.write_text(s)
