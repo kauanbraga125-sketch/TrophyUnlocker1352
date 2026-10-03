@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13.10 Capas e Vinculo Manual
-VERSION     := 01.13
+TITLE       := Trophy Unlocker 13.52 V13.11 Professional Audio Fix
+VERSION     := 01.14
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
