@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.11 Professional Audio Fix
+name: Build Trophy Unlocker V13.12 NPBind Diagnostic
 
 on:
   push:
-    branches: [fix/v13.11-covers-hijack-dlc]
+    branches: [diag/v13.12-npbind-context]
   workflow_dispatch:
 
 permissions:
@@ -14,27 +14,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.11 professional audio fixed package
+      - name: Test and build V13.12 read-only diagnostic package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.11-Professional-Audio-Fixed
+          name: TrophyUnlocker1352-V13.12-NPBind-Diagnostic
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_11_Professional_Audio_Fixed.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_12_NPBind_Diagnostic.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
             dist_v13/param-sfo.txt
-      - name: Publish validated PKG
+      - name: Publish validated diagnostic PKG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v13.11-professional-audio-fix
-          name: Trophy Unlocker V13.11 Professional Audio Fix
+          tag_name: v13.12-npbind-diagnostic
+          name: Trophy Unlocker V13.12 NPBind Diagnostic
           prerelease: true
           files: |
-            dist_v13/Trophy_Unlocker_13.52_V13_11_Professional_Audio_Fixed.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_12_NPBind_Diagnostic.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/pkg-validation.txt
             dist_v13/host-tests.txt
