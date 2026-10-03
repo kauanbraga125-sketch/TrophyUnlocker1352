@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13.9 Installed Carousel
-VERSION     := 01.12
+TITLE       := Trophy Unlocker 13.52 V13.10 Capas e Vinculo Manual
+VERSION     := 01.13
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
