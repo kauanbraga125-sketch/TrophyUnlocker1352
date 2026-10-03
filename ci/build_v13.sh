@@ -3,9 +3,9 @@ set -euo pipefail
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 DEPS="$ROOT/.deps_v13"
 mkdir -p "$DEPS"
-if ! command -v clang++-18 >/dev/null || ! command -v ld.lld-18 >/dev/null || ! command -v rg >/dev/null || ! command -v git >/dev/null || [[ ! -f "$(clang++-18 -print-file-name=libclang_rt.asan-x86_64.a)" ]]; then
+if ! command -v clang++-18 >/dev/null || ! command -v ld.lld-18 >/dev/null || ! command -v rg >/dev/null || ! command -v git >/dev/null || ! command -v rsvg-convert >/dev/null || ! command -v convert >/dev/null || [[ ! -f "$(clang++-18 -print-file-name=libclang_rt.asan-x86_64.a)" ]]; then
   sudo apt-get update -qq
-  sudo apt-get install -y --no-install-recommends clang-18 lld-18 llvm-18 libclang-rt-18-dev make curl ca-certificates ripgrep git python3
+  sudo apt-get install -y --no-install-recommends clang-18 lld-18 llvm-18 libclang-rt-18-dev make curl ca-certificates ripgrep git python3 librsvg2-bin imagemagick
 fi
 if [[ ! -f "$DEPS/toolchain-llvm-18.tar.gz" ]]; then
   curl -fLsS --retry 3 https://github.com/OpenOrbis/OpenOrbis-PS4-Toolchain/releases/download/v0.5.4/toolchain-llvm-18.tar.gz -o "$DEPS/toolchain-llvm-18.tar.gz"
