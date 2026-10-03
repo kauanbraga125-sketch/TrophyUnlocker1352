@@ -40,17 +40,23 @@ rep('''    renderer=surface ? SDL_CreateSoftwareRenderer(surface) : nullptr;
     IMG_Init(IMG_INIT_PNG);''', '''    renderer=surface ? SDL_CreateSoftwareRenderer(surface) : nullptr;
     if (!renderer) for (;;) SDL_Delay(1000);
     SDL_Texture* background_texture=nullptr;
-#ifndef TU_HOST_PREVIEW
-    const char* background_path="/app0/assets/ui/background.bmp";
-#else
-    const char* background_path="assets/ui/background.bmp";
-#endif
-    SDL_Surface* background_surface=SDL_LoadBMP(background_path);
-    if (background_surface) {
-        background_texture=SDL_CreateTextureFromSurface(renderer,background_surface);
-        SDL_FreeSurface(background_surface);
-    }
     IMG_Init(IMG_INIT_PNG);''')
+
+rep('''    tu::FileSystem& fs=tu::native_filesystem();
+    tu::Library library(fs);''', '''    tu::FileSystem& fs=tu::native_filesystem();
+#ifndef TU_HOST_PREVIEW
+    {
+        std::vector<uint8_t> background_bytes;
+        if (!fs.read("/app0/sce_sys/pic0.png",12*1024*1024,background_bytes) && tu::valid_png(background_bytes)) {
+            SDL_Surface* background_surface=tu::decode_png_rgba(background_bytes);
+            if (background_surface) {
+                background_texture=SDL_CreateTextureFromSurface(renderer,background_surface);
+                SDL_FreeSurface(background_surface);
+            }
+        }
+    }
+#endif
+    tu::Library library(fs);''')
 
 rep('''        SDL_SetRenderDrawColor(renderer,11,16,24,255); SDL_RenderClear(renderer);
         fill({0,0,W,128},20,27,39);''', '''        SDL_SetRenderDrawColor(renderer,11,16,24,255); SDL_RenderClear(renderer);
@@ -64,4 +70,4 @@ s=re.sub(r'fill\((\{[^;]+?\}),18,24,35\);', r'fill_alpha(\1,18,24,35,205);', s)
 s=s.replace('Trophy Unlocker V13.12 DIAG','Trophy Unlocker V13.13 VISUAL')
 s=s.replace('V13.12 DIAG','V13.13 - CAPAS + FUNDO')
 path.write_text(s)
-print('[OK] V13.13 real PNG covers + in-app background applied')
+print('[OK] V13.13 real PNG covers + packaged pic0 background applied')
