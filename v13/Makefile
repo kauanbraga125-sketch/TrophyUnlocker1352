@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13.17 Fast Start Cover Fill
-VERSION     := 01.20
+TITLE       := Trophy Unlocker 13.52
+VERSION     := 01.21
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
