@@ -55,6 +55,58 @@ std::string game_status(const Game& g) {
     return "Nao confirmado como instalado";
 }
 
+static std::string cache_field(std::string value) {
+    for (char& c : value) if (c == '\t' || c == '\r' || c == '\n') c = ' ';
+    return value;
+}
+
+void Library::load_metadata_cache() {
+    metadata_cache.clear();
+    std::vector<uint8_t> bytes;
+    if (fs.read("/data/TrophyUnlocker1352/library-cache-v1.txt",256*1024,bytes)) return;
+    std::string text(bytes.begin(),bytes.end());
+    size_t pos=0;
+    while (pos < text.size() && metadata_cache.size() < 512) {
+        size_t end=text.find('\n',pos);
+        if (end == std::string::npos) end=text.size();
+        std::string line=text.substr(pos,end-pos);
+        size_t a=line.find('\t'), b=a == std::string::npos ? std::string::npos : line.find('\t',a+1);
+        if (a != std::string::npos && b != std::string::npos) {
+            CachedMetadata item;
+            item.id=line.substr(0,a);
+            item.title=line.substr(a+1,b-a-1);
+            item.icon=line.substr(b+1);
+            if (is_cusa(item.id) && item.title.size() <= 512 && item.icon.size() <= 1024) metadata_cache.push_back(item);
+        }
+        pos=end+1;
+    }
+}
+
+void Library::apply_metadata_cache(Game& g) {
+    for (const CachedMetadata& item : metadata_cache) {
+        if (item.id != g.id) continue;
+        if (!item.title.empty()) g.title=item.title;
+        if (!item.icon.empty()) g.icon=item.icon;
+        if (!g.title.empty() || !g.icon.empty()) g.metadata=true;
+        return;
+    }
+}
+
+void Library::save_metadata_cache() {
+    std::string text;
+    text.reserve(games.size()*160);
+    for (const Game& g : games) {
+        if (!is_cusa(g.id)) continue;
+        text += g.id;
+        text += '\t';
+        text += cache_field(g.title);
+        text += '\t';
+        text += cache_field(g.icon);
+        text += '\n';
+    }
+    fs.save("/data/TrophyUnlocker1352/library-cache-v1.txt",text);
+}
+
 void Library::enrich(Game& g) {
     // IMPORTANT: discovery is already complete before enrich(). These paths
     // only enrich an installed CUSA with title/icon/metadata; they never create
@@ -100,6 +152,7 @@ size_t Library::merge(const Game& value) {
 
 void Library::begin_scan() {
     games.clear(); roots.clear();
+    load_metadata_cache();
     root_index = 0; enrich_index = 0; scanning = true;
 }
 
@@ -127,6 +180,7 @@ bool Library::scan_step() {
             game.package = true;   // presence in an installed-app root is authoritative
             game.metadata = false;
             game.manual = false;
+            apply_metadata_cache(game);
             merge(game);
         }
         roots.push_back(status);
@@ -137,9 +191,13 @@ bool Library::scan_step() {
     }
 
     if (enrich_index < games.size()) {
-        enrich(games[enrich_index++]);
+        Game& game=games[enrich_index++];
+        // A complete cache hit avoids all SFO/icon probing on startup. The game
+        // itself was still independently verified in an installed-app root.
+        if (game.title.empty() || game.icon.empty()) enrich(game);
         return true;
     }
+    save_metadata_cache();
     scanning = false;
     return false;
 }
