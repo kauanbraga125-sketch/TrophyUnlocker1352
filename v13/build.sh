@@ -28,12 +28,10 @@ for path, ew, eh in ((sys.argv[1], int(sys.argv[2]), int(sys.argv[3])), (sys.arg
     print(f'[OK] visual asset {path}: {w}x{h}')
 PY
 
-# Audio assets are generated deterministically during the build.
 python3 "$ROOT/v13/generate_audio.py" "$WORK/assets/audio"
 
 rm -f "$WORK/SDL2/"*.cpp "$WORK/SDL2/"*.h
 cp "$ROOT/v13/"*.cpp "$ROOT/v13/"*.h "$WORK/SDL2/"
-# Pin stb_image to an immutable upstream commit; only the PNG decoder is compiled.
 curl -fLsS --retry 3 "https://raw.githubusercontent.com/nothings/stb/2c980bb59875b0d32144a71867fbdebb2f77cd20/stb_image.h" -o "$WORK/SDL2/stb_image.h"
 test -s "$WORK/SDL2/stb_image.h"
 python3 "$ROOT/v13/patch_trophy_ui.py" "$WORK/SDL2/main.cpp"
@@ -43,6 +41,7 @@ python3 "$ROOT/v13/patch_v1312_readonly.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1313_visual.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1314_clean.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1315_perf.py" "$WORK/SDL2/main.cpp"
+python3 "$ROOT/v13/patch_v1316_dirty.py" "$WORK/SDL2/main.cpp"
 cp "$ROOT/v13/Makefile" "$WORK/Makefile"
 make -C "$WORK" clean
 make -C "$WORK" -j2
@@ -52,6 +51,6 @@ PKG="$WORK/IV0000-BREW13533_00-TROPHYV12UI01200.pkg"
 if rg -i '\[(FAIL|ERROR)\]' "$DIST/pkg-validation.txt"; then exit 1; fi
 test "$(rg -c '^\[OK\]' "$DIST/pkg-validation.txt")" -ge 28
 "$TOOL" sfo_listentries "$WORK/sce_sys/param.sfo" > "$DIST/param-sfo.txt"
-OUT="Trophy_Unlocker_13.52_V13_15_Fast_Covers_Font.pkg"
+OUT="Trophy_Unlocker_13.52_V13_16_Dirty_Render.pkg"
 cp "$PKG" "$DIST/$OUT"
 (cd "$DIST" && sha256sum "$OUT" > SHA256SUMS.txt)
