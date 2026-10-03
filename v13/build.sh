@@ -10,14 +10,15 @@ cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/assets" "$WORK/"
 cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/sce_module" "$WORK/"
 cp -a "$OO_PS4_TOOLCHAIN/samples/SDL2/sce_sys" "$WORK/"
 
-# Professional branding: menu icon + clean background.
-mkdir -p "$WORK/sce_sys"
+# Professional branding: PS4 menu icon/background + same artwork inside the app.
+mkdir -p "$WORK/sce_sys" "$WORK/assets/ui"
 rsvg-convert -w 512 -h 512 "$ROOT/v13/branding/icon0.svg" -o "$WORK/sce_sys/icon0-rgba.png"
 rsvg-convert -w 1920 -h 1080 "$ROOT/v13/branding/pic0.svg" -o "$WORK/sce_sys/pic0-rgba.png"
 convert "$WORK/sce_sys/icon0-rgba.png" -alpha off -type TrueColor PNG24:"$WORK/sce_sys/icon0.png"
 convert "$WORK/sce_sys/pic0-rgba.png" -alpha off -type TrueColor PNG24:"$WORK/sce_sys/pic0.png"
+convert "$WORK/sce_sys/pic0.png" -alpha off -type TrueColor BMP3:"$WORK/assets/ui/background.bmp"
 rm -f "$WORK/sce_sys/icon0-rgba.png" "$WORK/sce_sys/pic0-rgba.png"
-python3 - "$WORK/sce_sys/icon0.png" 512 512 "$WORK/sce_sys/pic0.png" 1920 1080 <<'PY'
+python3 - "$WORK/sce_sys/icon0.png" 512 512 "$WORK/sce_sys/pic0.png" 1920 1080 "$WORK/assets/ui/background.bmp" <<'PY'
 import struct, sys
 for path, ew, eh in ((sys.argv[1], int(sys.argv[2]), int(sys.argv[3])), (sys.argv[4], int(sys.argv[5]), int(sys.argv[6]))):
     with open(path, 'rb') as f: sig=f.read(24)
@@ -25,6 +26,12 @@ for path, ew, eh in ((sys.argv[1], int(sys.argv[2]), int(sys.argv[3])), (sys.arg
     w,h=struct.unpack('>II',sig[16:24])
     if (w,h)!=(ew,eh): raise SystemExit(f'Bad dimensions for {path}: {w}x{h}, expected {ew}x{eh}')
     print(f'[OK] branding {path}: {w}x{h}')
+with open(sys.argv[7], 'rb') as f:
+    hdr=f.read(26)
+if hdr[:2] != b'BM': raise SystemExit('In-app background is not BMP')
+w,h=struct.unpack_from('<ii',hdr,18)
+if (w,abs(h)) != (1920,1080): raise SystemExit(f'Bad BMP dimensions: {w}x{h}')
+print(f'[OK] in-app background {sys.argv[7]}: {w}x{abs(h)}')
 PY
 
 # Audio assets are generated deterministically during the build.
@@ -32,10 +39,14 @@ python3 "$ROOT/v13/generate_audio.py" "$WORK/assets/audio"
 
 rm -f "$WORK/SDL2/"*.cpp "$WORK/SDL2/"*.h
 cp "$ROOT/v13/"*.cpp "$ROOT/v13/"*.h "$WORK/SDL2/"
+# Pin stb_image to an immutable upstream commit; only the PNG decoder is compiled.
+curl -fLsS --retry 3 "https://raw.githubusercontent.com/nothings/stb/2c980bb59875b0d32144a71867fbdebb2f77cd20/stb_image.h" -o "$WORK/SDL2/stb_image.h"
+test -s "$WORK/SDL2/stb_image.h"
 python3 "$ROOT/v13/patch_trophy_ui.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_audio.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1311_fixes.py" "$WORK/SDL2"
 python3 "$ROOT/v13/patch_v1312_readonly.py" "$WORK/SDL2/main.cpp"
+python3 "$ROOT/v13/patch_v1313_visual.py" "$WORK/SDL2/main.cpp"
 cp "$ROOT/v13/Makefile" "$WORK/Makefile"
 make -C "$WORK" clean
 make -C "$WORK" -j2
@@ -45,6 +56,6 @@ PKG="$WORK/IV0000-BREW13533_00-TROPHYV12UI01200.pkg"
 if rg -i '\[(FAIL|ERROR)\]' "$DIST/pkg-validation.txt"; then exit 1; fi
 test "$(rg -c '^\[OK\]' "$DIST/pkg-validation.txt")" -ge 28
 "$TOOL" sfo_listentries "$WORK/sce_sys/param.sfo" > "$DIST/param-sfo.txt"
-OUT="Trophy_Unlocker_13.52_V13_12_NPBind_Diagnostic.pkg"
+OUT="Trophy_Unlocker_13.52_V13_13_Covers_Background.pkg"
 cp "$PKG" "$DIST/$OUT"
 (cd "$DIST" && sha256sum "$OUT" > SHA256SUMS.txt)
