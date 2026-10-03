@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.10 Capas e Vinculo Manual
+name: Build Trophy Unlocker V13.10 Professional
 
 on:
   push:
-    branches: [fix/v13.9-installed-carousel]
+    branches: [fix/v13.9-installed-carousel, style/v13.10-professional]
   workflow_dispatch:
 
 permissions:
@@ -14,15 +14,15 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.10 from tracked source
+      - name: Test and build V13.10 professional package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.10-Capas-Vinculo-Manual
+          name: TrophyUnlocker1352-V13.10-Professional
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_10_Capas_Vinculo_Manual.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_10_Professional.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
