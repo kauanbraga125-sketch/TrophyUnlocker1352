@@ -34,6 +34,16 @@ struct TrophyLoadResult {
     TrophySet set;
 };
 
+struct TrophyCatalogResult {
+    int status = -1;
+    int user_status = -1;
+    int sqlite_status = -1;
+    uint32_t user_id = 0;
+    std::string database_path;
+    std::string detail;
+    std::vector<TrophySet> sets;
+};
+
 bool valid_np_communication_id(const std::string& value);
 const char* trophy_grade_name(int grade);
 int query_trophy_database(const std::string& database_path,
@@ -42,5 +52,6 @@ int query_trophy_database(const std::string& database_path,
                           std::string& detail);
 TrophyLoadResult load_trophies(const std::string& np_communication_id);
 TrophyLoadResult load_trophies_for_game(const Game& game, FileSystem& fs);
+TrophyCatalogResult load_all_trophy_sets();
 
 }
