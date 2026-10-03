@@ -1,0 +1,42 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512">
+<defs>
+  <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#020816"/><stop offset=".52" stop-color="#071a42"/><stop offset="1" stop-color="#001021"/></linearGradient>
+  <linearGradient id="silver" x1="0" y1="0" x2="0" y2="1"><stop stop-color="#fff"/><stop offset=".22" stop-color="#cde7ff"/><stop offset=".5" stop-color="#61799b"/><stop offset=".76" stop-color="#f8fbff"/><stop offset="1" stop-color="#7188a7"/></linearGradient>
+  <linearGradient id="blue" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#77efff"/><stop offset=".42" stop-color="#078dff"/><stop offset="1" stop-color="#0037d8"/></linearGradient>
+  <radialGradient id="halo"><stop stop-color="#10aaff" stop-opacity=".65"/><stop offset="1" stop-color="#0065ff" stop-opacity="0"/></radialGradient>
+  <filter id="glow" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="7" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="soft" x="-50%" y="-50%" width="200%" height="200%"><feGaussianBlur stdDeviation="18"/></filter>
+</defs>
+<rect width="512" height="512" fill="url(#bg)"/>
+<circle cx="256" cy="205" r="210" fill="url(#halo)"/>
+<g opacity=".55" fill="#d8f4ff"><circle cx="61" cy="79" r="1.5"/><circle cx="118" cy="45" r="1"/><circle cx="438" cy="92" r="1.5"/><circle cx="401" cy="53" r="1"/><circle cx="81" cy="250" r="1"/><circle cx="448" cy="278" r="1"/><circle cx="341" cy="82" r="1"/><circle cx="179" cy="97" r="1"/></g>
+<path d="M-30 365 C110 275 196 302 276 234 S422 134 555 75" fill="none" stroke="#087eff" stroke-opacity=".22" stroke-width="36" filter="url(#soft)"/>
+<rect x="12" y="12" width="488" height="488" rx="48" fill="none" stroke="#12adff" stroke-width="5" filter="url(#glow)"/>
+<rect x="20" y="20" width="472" height="472" rx="42" fill="none" stroke="#75e8ff" stroke-opacity=".35" stroke-width="1.5"/>
+<!-- button symbols -->
+<g fill="none" stroke="#48bfff" stroke-width="8" opacity=".72" filter="url(#glow)">
+ <path d="M70 119 l38 38 M108 119 l-38 38"/>
+ <circle cx="423" cy="139" r="28"/>
+ <rect x="64" y="209" width="49" height="49" rx="3" transform="rotate(-7 88 233)"/>
+ <path d="M420 206 l31 52 h-62z"/>
+</g>
+<!-- trophy glow -->
+<ellipse cx="256" cy="213" rx="135" ry="145" fill="#087eff" opacity=".16" filter="url(#soft)"/>
+<!-- trophy -->
+<g filter="url(#glow)">
+ <path d="M180 104 h152 v41 c0 83-31 134-76 134s-76-51-76-134z" fill="url(#silver)" stroke="#bfe9ff" stroke-width="3"/>
+ <path d="M180 125 h-29 c-31 0-46 22-39 54 8 37 34 60 75 61" fill="none" stroke="url(#silver)" stroke-width="17" stroke-linecap="round"/>
+ <path d="M332 125 h29 c31 0 46 22 39 54-8 37-34 60-75 61" fill="none" stroke="url(#silver)" stroke-width="17" stroke-linecap="round"/>
+ <path d="M239 270 h34 v42 h-34z" fill="url(#silver)"/>
+ <path d="M207 310 h98 l18 25 H189z" fill="url(#silver)" stroke="#bfe9ff" stroke-width="2"/>
+ <path d="M182 335 h148 v23 H182z" rx="5" fill="url(#blue)" stroke="#8debff" stroke-width="2"/>
+ <path d="M201 116 h110" stroke="#fff" stroke-opacity=".8" stroke-width="5" stroke-linecap="round"/>
+ <path d="M196 148 c8 72 27 105 60 115" fill="none" stroke="#fff" stroke-opacity=".3" stroke-width="8" stroke-linecap="round"/>
+</g>
+<!-- title -->
+<g text-anchor="middle" font-family="DejaVu Sans, sans-serif" font-weight="900">
+ <text x="256" y="409" font-size="50" letter-spacing="2" fill="url(#silver)" stroke="#082a63" stroke-width="2">TROPHY</text>
+ <text x="256" y="451" font-size="39" letter-spacing="1" fill="url(#blue)" stroke="#001d5b" stroke-width="2">UNLOCKER</text>
+ <text x="256" y="478" font-size="18" letter-spacing="5" fill="#eaf7ff">BY KAUAN</text>
+</g>
+</svg>
