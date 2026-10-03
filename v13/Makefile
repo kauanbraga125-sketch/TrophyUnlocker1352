@@ -1,9 +1,9 @@
-TITLE       := Trophy Unlocker 13.52 V13.3 DB Memoria
-VERSION     := 01.04
+TITLE       := Trophy Unlocker 13.52 V13.6.1 Mount Seguro
+VERSION     := 01.08
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
-LIBS        := -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2 -lSDL2_image -lSQLite
+LIBS        := -lc -lkernel -lc++ -lSceUserService -lSceVideoOut -lSceAudioOut -lScePad -lSceSysmodule -lSceFreeType -lSDL2 -lSDL2_image -lSQLite -ljbc
 EXTRAFLAGS  := -fexceptions -fcxx-exceptions
 ASSETS      := $(wildcard assets/**/*)
 LIBMODULES  := $(wildcard sce_module/*)
