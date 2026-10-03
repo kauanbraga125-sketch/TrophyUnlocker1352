@@ -62,8 +62,9 @@ public:
         sceKernelClose(fd); return true;
     }
     int save(const std::string& path, const std::string& contents) override {
-        // Only the app's own catalog/log is writable. Never games, app.db or trophy databases.
+        // Only the app's own catalog/log/link files are writable. Never games, app.db or trophy databases.
         if (path != "/data/TrophyUnlocker1352/manual-games.txt" &&
+            path != "/data/TrophyUnlocker1352/trophy-links.txt" &&
             path != "/data/TrophyUnlocker1352/v13-diagnostic.txt") return -EACCES;
         int mk = native_error(sceKernelMkdir("/data/TrophyUnlocker1352", 0755));
         if (mk && mk != -EEXIST) return mk;
