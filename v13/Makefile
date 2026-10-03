@@ -1,5 +1,5 @@
-TITLE       := Trophy Unlocker 13.52 V13.13 Capas e Fundo
-VERSION     := 01.16
+TITLE       := Trophy Unlocker 13.52 V13.14 Clean Library
+VERSION     := 01.17
 TITLE_ID    := BREW13533
 CONTENT_ID  := IV0000-BREW13533_00-TROPHYV12UI01200
 
