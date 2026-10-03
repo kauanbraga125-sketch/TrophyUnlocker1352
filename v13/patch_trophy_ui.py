@@ -11,7 +11,7 @@ def rep(old, new):
         raise SystemExit('patch anchor not found: ' + old[:80])
     s = s.replace(old, new, 1)
 
-rep('#include "library.h"\n', '#include "library.h"\n#include "trophies.h"\n')
+rep('#include "library.h"\n', '#include "library.h"\n#include "trophies.h"\n#include "unlock.h"\n')
 rep('enum Screen { LIBRARY, DETAILS, BROWSER, CUSA_INPUT, DIAGNOSTICS };',
     'enum Screen { LIBRARY, DETAILS, TROPHIES, BROWSER, CUSA_INPUT, DIAGNOSTICS };')
 rep('int manual_load=-2, diagnostic_save=-2;\n',
@@ -22,9 +22,8 @@ rep('''            } else if (screen == DETAILS) {
                 else if (key == 2) { browser.locations(); screen=BROWSER; }
             } else if (screen == BROWSER) {''', '''            } else if (screen == DETAILS) {
                 if (key == 1) screen=LIBRARY;
-                else if (key == 2) { browser.locations(); screen=BROWSER; }
                 else if (key == 0 && !library.games.empty()) {
-                    message="Lendo os trofeus locais deste jogo...";
+                    message="Lendo os trofeus deste jogo instalado...";
                     trophy_result=tu::load_trophies_for_game(library.games[selected],fs);
                     trophy_selected=0;
                     if (!trophy_result.status) {
@@ -41,16 +40,31 @@ rep('''            } else if (screen == DETAILS) {
                 if (key == 13 && n) trophy_selected=(trophy_selected+n-1)%n;
                 else if (key == 14 && n) trophy_selected=(trophy_selected+1)%n;
                 else if (key == 1) screen=DETAILS;
+                else if (key == 0 && n && !library.games.empty()) {
+                    tu::Trophy& tr=trophy_result.set.trophies[trophy_selected];
+                    if (tr.unlocked) {
+                        message="Esse trofeu ja esta desbloqueado.";
+                    } else {
+                        message="Executando Trophy Hijack e pedindo desbloqueio ao PS4...";
+                        tu::UnlockResult ur=tu::unlock_trophy_for_game(library.games[selected],tr.id);
+                        message=ur.detail;
+                        tu::TrophyLoadResult refreshed=tu::load_trophies_for_game(library.games[selected],fs);
+                        if (!refreshed.status) {
+                            trophy_result=refreshed;
+                            if (trophy_selected >= int(trophy_result.set.trophies.size())) trophy_selected=0;
+                        }
+                    }
+                }
             } else if (screen == BROWSER) {''')
 
 rep('''                text("Esta etapa identifica jogos e seus arquivos.",645,701,1100,2);
                 text("O desbloqueio de trofeus ainda nao esta integrado a esta UI.",645,748,1100,2);
             }
             text("O voltar   QUADRADO procurar pasta do jogo",80,977,1780,2);
-        } else if (screen == BROWSER) {''', '''                text("Jogo identificado. Agora podemos consultar o banco local de trofeus.",645,701,1100,2);
-                text("X  Abrir lista de trofeus (modo somente leitura)",645,748,1100,2);
+        } else if (screen == BROWSER) {''', '''                text("Jogo confirmado nos diretorios de instalacao do PS4.",645,701,1100,2);
+                text("X  Abrir lista de trofeus",645,748,1100,2);
             }
-            text("X trofeus   O voltar   QUADRADO procurar pasta do jogo",80,977,1780,2);
+            text("X trofeus   O voltar",80,977,1780,2);
         } else if (screen == TROPHIES) {
             fill({70,160,1120,750},18,24,35); border({70,160,1120,750});
             fill({1225,160,625,750},18,24,35); border({1225,160,625,750});
@@ -77,8 +91,8 @@ rep('''                text("Esta etapa identifica jogos e seus arquivos.",645,7
                 text("Descricao:",1260,493,540,2);
                 text(tr.description.empty() ? "Sem descricao" : tr.description,1260,540,540,2);
             }
-            text("Leitura segura: esta versao nao altera trophy_local.db.",1260,800,540,2);
-            text("CIMA/BAIXO escolher   O voltar",80,977,1780,2);
+            text("V13.9: Trophy Hijack somente para jogo instalado selecionado.",1260,800,540,2);
+            text("X desbloquear   CIMA/BAIXO escolher   O voltar",80,977,1780,2);
         } else if (screen == BROWSER) {''')
 
 rep('''            if (requested && !strcmp(requested,"details")) screen=DETAILS;
@@ -86,6 +100,9 @@ rep('''            if (requested && !strcmp(requested,"details")) screen=DETAILS
             if (requested && !strcmp(requested,"trophies")) screen=TROPHIES;
             if (requested && !strcmp(requested,"diagnostics")) screen=DIAGNOSTICS;''')
 
-s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.3')
-s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.3 - BANCO DE TROFEUS EM MEMORIA')
+s = s.replace('Trophy Unlocker V13.1', 'Trophy Unlocker V13.9')
+s = s.replace('V13.1 - CORRECAO DE ACESSO', 'V13.9 - JOGOS INSTALADOS / CARROSSEL')
+s = s.replace('"QUADRADO   Procurar pastas ou informar CUSA"', '"Somente jogos realmente instalados entram nesta biblioteca."')
+s = s.replace('"QUADRADO  Busca manual"', '"X  Abrir jogo selecionado"')
+s = s.replace('"ESQ/DIR navegar   X detalhes   QUADRADO buscar manual   TRIANGULO acesso"', '"ESQ/DIR navegar   X selecionar jogo   TRIANGULO acesso   R1 atualizar"')
 path.write_text(s)
