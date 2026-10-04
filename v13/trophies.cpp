@@ -792,6 +792,228 @@ TrophyVisualRevertResult revert_visual_trophy(long long title_database_id, int t
 #endif
 }
 
+
+TrophyFakeUnlockResult fake_unlock_trophy(long long title_database_id, int trophy_id) {
+    TrophyFakeUnlockResult result;
+#ifdef TU_HOST_TEST
+    (void)title_database_id;
+    (void)trophy_id;
+    result.status=-ENOTSUP;
+    result.detail="Fake unlock local so existe no PS4.";
+    return result;
+#else
+    if (title_database_id < 0 || trophy_id < 0 || trophy_id > 255) {
+        result.status=-EINVAL;
+        result.detail="Conjunto ou ID de trofeu invalido.";
+        return result;
+    }
+
+    AccessResult access=request_goldhen_access();
+    if (!access.acknowledged()) {
+        result.status=-EACCES;
+        result.detail="GoldHEN nao confirmou acesso para editar o estado local.";
+        return result;
+    }
+
+    int32_t user=0;
+    int user_status=sceUserServiceGetInitialUser(&user);
+    if (user_status < 0) {
+        result.status=user_status;
+        result.detail="Nao foi possivel identificar o usuario ativo.";
+        return result;
+    }
+
+    char dbpath[128];
+    snprintf(dbpath,sizeof(dbpath),"/user/home/%08x/trophy/db/trophy_local.db",unsigned(user));
+
+    std::vector<uint8_t> original;
+    std::string io_detail;
+    int st=read_trophy_db_bytes(dbpath,original,io_detail);
+    if (st) {
+        result.status=st;
+        result.detail=io_detail;
+        return result;
+    }
+
+    sqlite3* db=nullptr;
+    int rc=sqlite3_open(":memory:",&db);
+    if (rc != SQLITE_OK) {
+        result.status=-EIO;
+        result.detail=db ? sqlite3_errmsg(db) : "Falha ao criar banco em memoria.";
+        if (db) sqlite3_close(db);
+        return result;
+    }
+
+    unsigned char* work=static_cast<unsigned char*>(sqlite3_malloc64(original.size()));
+    if (!work) {
+        sqlite3_close(db);
+        result.status=-ENOMEM;
+        result.detail="Sem memoria para preparar o fake unlock.";
+        return result;
+    }
+    memcpy(work,original.data(),original.size());
+    rc=sqlite3_deserialize(db,"main",work,
+                           static_cast<sqlite3_int64>(original.size()),
+                           static_cast<sqlite3_int64>(original.size()),0);
+    if (rc != SQLITE_OK) {
+        result.status=-EIO;
+        result.detail=sqlite3_errmsg(db);
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+    sqlite3_exec(db,"PRAGMA journal_mode=OFF; PRAGMA synchronous=OFF;",nullptr,nullptr,nullptr);
+
+    int group_id=0;
+    int unlocked=0;
+    sqlite3_stmt* check=nullptr;
+    rc=sqlite3_prepare_v2(db,
+        "SELECT groupid, unlocked FROM tbl_trophy_flag WHERE title_id=? AND trophyid=? LIMIT 1",
+        -1,&check,nullptr);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int64(check,1,title_database_id);
+        sqlite3_bind_int(check,2,trophy_id);
+        rc=sqlite3_step(check);
+        if (rc == SQLITE_ROW) {
+            group_id=sqlite3_column_int(check,0);
+            unlocked=sqlite3_column_int(check,1);
+            rc=SQLITE_OK;
+        } else if (rc == SQLITE_DONE) {
+            rc=SQLITE_NOTFOUND;
+        }
+    }
+    sqlite3_finalize(check);
+    if (rc != SQLITE_OK) {
+        result.status=-ENOENT;
+        result.detail="Trofeu selecionado nao foi encontrado no banco local.";
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+    if (unlocked) {
+        result.status=-EALREADY;
+        result.detail="Esse trofeu ja esta marcado como desbloqueado.";
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+
+    result.backup_path=next_trophy_backup(uint32_t(user),title_database_id,trophy_id);
+    if (result.backup_path.empty()) {
+        result.status=-EIO;
+        result.detail="Nao foi possivel reservar um nome para o backup.";
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+    st=write_bytes_atomic(result.backup_path,original.data(),original.size(),io_detail);
+    if (st) {
+        char fallback[256];
+        snprintf(fallback,sizeof(fallback),
+                 "/data/TU1352_backup_%08x_set%lld_t%03d_fake.bak",
+                 unsigned(user),title_database_id,trophy_id);
+        std::string fallback_detail;
+        int fallback_status=write_bytes_atomic(fallback,original.data(),original.size(),fallback_detail);
+        if (!fallback_status) {
+            result.backup_path=fallback;
+            st=0;
+        } else {
+            result.status=fallback_status;
+            result.detail="Backup obrigatorio falhou. Nenhuma alteracao foi feita. Principal: "+
+                          io_detail+" | Fallback: "+fallback_detail;
+            sqlite3_close(db);
+            sqlite3_free(work);
+            return result;
+        }
+    }
+
+    char* err=nullptr;
+    rc=sqlite3_exec(db,"BEGIN IMMEDIATE;",nullptr,nullptr,&err);
+    if (rc != SQLITE_OK) {
+        result.status=-EIO;
+        result.detail=err ? err : sqlite3_errmsg(db);
+        sqlite3_free(err);
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+
+    sqlite3_stmt* update=nullptr;
+    rc=sqlite3_prepare_v2(db,
+        "UPDATE tbl_trophy_flag SET "
+        "visible=1,"
+        "unlocked=1,"
+        "time_unlocked=strftime('%Y-%m-%dT%H:%M:%S.00Z','now'),"
+        "time_unlocked_uc=strftime('%Y-%m-%dT%H:%M:%S.00Z','now') "
+        "WHERE title_id=? AND trophyid=? AND unlocked=0",
+        -1,&update,nullptr);
+    if (rc == SQLITE_OK) {
+        sqlite3_bind_int64(update,1,title_database_id);
+        sqlite3_bind_int(update,2,trophy_id);
+        rc=sqlite3_step(update);
+    }
+    sqlite3_finalize(update);
+    if (rc != SQLITE_DONE) {
+        sqlite3_exec(db,"ROLLBACK;",nullptr,nullptr,nullptr);
+        result.status=-EIO;
+        result.detail="Falha ao aplicar fake unlock: "+std::string(sqlite3_errmsg(db));
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+
+    std::string aggregate_detail;
+    rc=recompute_trophy_aggregates(db,title_database_id,group_id,aggregate_detail);
+    if (rc != SQLITE_OK) {
+        sqlite3_exec(db,"ROLLBACK;",nullptr,nullptr,nullptr);
+        result.status=-EIO;
+        result.detail="Falha ao recalcular progresso: "+aggregate_detail;
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+
+    rc=sqlite3_exec(db,"COMMIT;",nullptr,nullptr,&err);
+    if (rc != SQLITE_OK) {
+        sqlite3_exec(db,"ROLLBACK;",nullptr,nullptr,nullptr);
+        result.status=-EIO;
+        result.detail=err ? err : sqlite3_errmsg(db);
+        sqlite3_free(err);
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+    sqlite3_free(err);
+
+    sqlite3_int64 serialized_size=0;
+    unsigned char* serialized=sqlite3_serialize(db,"main",&serialized_size,0);
+    if (!serialized || serialized_size <= 0 || serialized_size > 64LL*1024LL*1024LL) {
+        if (serialized) sqlite3_free(serialized);
+        result.status=-EIO;
+        result.detail="Falha ao serializar o banco modificado. O original continua intacto.";
+        sqlite3_close(db);
+        sqlite3_free(work);
+        return result;
+    }
+
+    st=write_bytes_atomic(dbpath,serialized,static_cast<size_t>(serialized_size),io_detail);
+    sqlite3_free(serialized);
+    sqlite3_close(db);
+    sqlite3_free(work);
+    if (st) {
+        result.status=st;
+        result.detail="Nao foi possivel substituir trophy_local.db. Backup preservado em "+
+                      result.backup_path+". "+io_detail;
+        return result;
+    }
+
+    result.status=0;
+    result.detail="FAKE UNLOCK aplicado localmente. Backup: "+result.backup_path+
+                  ". Isso nao e o desbloqueio nativo/real do PS4.";
+    return result;
+#endif
+}
+
 TrophyLoadResult load_trophies_for_game(const Game& game, FileSystem& fs) {
     return load_for_game_internal(game,fs);
 }
