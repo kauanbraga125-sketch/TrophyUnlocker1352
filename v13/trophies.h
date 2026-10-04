@@ -54,4 +54,12 @@ TrophyLoadResult load_trophies(const std::string& np_communication_id);
 TrophyLoadResult load_trophies_for_game(const Game& game, FileSystem& fs);
 TrophyCatalogResult load_all_trophy_sets();
 
+struct TrophyVisualRevertResult {
+    int status = -1;
+    std::string detail;
+    std::string backup_path;
+};
+
+TrophyVisualRevertResult revert_visual_trophy(long long title_database_id, int trophy_id);
+
 }
