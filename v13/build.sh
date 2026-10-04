@@ -54,6 +54,6 @@ PKG="$WORK/IV0000-BREW13533_00-TROPHYV12UI01200.pkg"
 if rg -i '\[(FAIL|ERROR)\]' "$DIST/pkg-validation.txt"; then exit 1; fi
 test "$(rg -c '^\[OK\]' "$DIST/pkg-validation.txt")" -ge 28
 "$TOOL" sfo_listentries "$WORK/sce_sys/param.sfo" > "$DIST/param-sfo.txt"
-OUT="Trophy_Unlocker_13.52_V13_19_Visual_Revert.pkg"
+OUT="Trophy_Unlocker_13.52_V13_20_Backup_Fix.pkg"
 cp "$PKG" "$DIST/$OUT"
 (cd "$DIST" && sha256sum "$OUT" > SHA256SUMS.txt)
