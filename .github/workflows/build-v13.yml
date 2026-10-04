@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.18 Final Stable
+name: Build Trophy Unlocker V13.19 Visual Revert
 
 on:
   push:
-    branches: [release/v13.18-final-stable]
+    branches: [feature/v13.19-visual-revert]
   workflow_dispatch:
 
 permissions:
@@ -14,27 +14,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.18 final stable package
+      - name: Test and build V13.19 visual revert package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.18-Final-Stable
+          name: TrophyUnlocker1352-V13.19-Visual-Revert
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_18_Final_Stable.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_19_Visual_Revert.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
             dist_v13/param-sfo.txt
-      - name: Publish validated V13.18 final PKG
+      - name: Publish validated V13.19 visual revert PKG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v13.18-final-stable
-          name: Trophy Unlocker V13.18 Final Stable
-          prerelease: false
+          tag_name: v13.19-visual-revert
+          name: Trophy Unlocker V13.19 Visual Revert
+          prerelease: true
           files: |
-            dist_v13/Trophy_Unlocker_13.52_V13_18_Final_Stable.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_19_Visual_Revert.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/pkg-validation.txt
             dist_v13/host-tests.txt
