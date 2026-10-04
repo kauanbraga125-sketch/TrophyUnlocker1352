@@ -391,17 +391,15 @@ static int read_trophy_db_bytes(const std::string& path,
     return 0;
 }
 
-static int write_bytes_atomic(const std::string& path,
+static int write_bytes_direct(const std::string& path,
                               const uint8_t* data,
                               size_t size,
                               std::string& detail) {
     if (!data || !size) return -EINVAL;
-    const std::string temp = path + ".tu-v1319.tmp";
-    sceKernelUnlink(temp.c_str());
-    int fd = sceKernelOpen(temp.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0600);
+    int fd = sceKernelOpen(path.c_str(), O_WRONLY | O_CREAT | O_TRUNC, 0644);
     if (fd < 0) {
         int st=trophy_native_error(fd);
-        detail="Nao foi possivel criar arquivo temporario ("+std::to_string(st)+").";
+        detail="Falha ao abrir destino para escrita ("+std::to_string(st)+"): "+path;
         return st;
     }
     size_t pos=0;
@@ -417,12 +415,45 @@ static int write_bytes_atomic(const std::string& path,
     if (!status) status=trophy_native_error(sceKernelFsync(fd));
     int closed=trophy_native_error(sceKernelClose(fd));
     if (!status) status=closed;
-    if (!status) status=trophy_native_error(sceKernelRename(temp.c_str(),path.c_str()));
-    if (status) {
-        sceKernelUnlink(temp.c_str());
-        detail="Falha ao gravar arquivo com seguranca ("+std::to_string(status)+").";
-    }
+    if (status)
+        detail="Falha durante a escrita ("+std::to_string(status)+"): "+path;
     return status;
+}
+
+static int write_bytes_atomic(const std::string& path,
+                              const uint8_t* data,
+                              size_t size,
+                              std::string& detail) {
+    if (!data || !size) return -EINVAL;
+    const std::string temp = path + ".tu-v1320.tmp";
+    sceKernelUnlink(temp.c_str());
+
+    std::string temp_detail;
+    int status=write_bytes_direct(temp,data,size,temp_detail);
+    if (!status) {
+        int renamed=trophy_native_error(sceKernelRename(temp.c_str(),path.c_str()));
+        if (!renamed) return 0;
+
+        // Some protected PS4 locations allow replacing the file itself but
+        // reject creation/rename of a sibling temporary file. We already have
+        // an external backup before touching trophy_local.db, so fall back to
+        // a direct overwrite when rename is blocked.
+        std::string direct_detail;
+        int direct=write_bytes_direct(path,data,size,direct_detail);
+        sceKernelUnlink(temp.c_str());
+        if (!direct) return 0;
+        detail="Rename falhou ("+std::to_string(renamed)+") e escrita direta falhou. "+direct_detail;
+        return direct;
+    }
+
+    // /data on some GoldHEN setups can reject the temporary filename/mode even
+    // when the final file is writable. Try the final destination directly.
+    sceKernelUnlink(temp.c_str());
+    std::string direct_detail;
+    int direct=write_bytes_direct(path,data,size,direct_detail);
+    if (!direct) return 0;
+    detail="Temporario falhou: "+temp_detail+" | Direto falhou: "+direct_detail;
+    return direct;
 }
 
 static bool file_exists_native(const std::string& path) {
@@ -654,11 +685,25 @@ TrophyVisualRevertResult revert_visual_trophy(long long title_database_id, int t
     }
     st=write_bytes_atomic(result.backup_path,original.data(),original.size(),io_detail);
     if (st) {
-        result.status=st;
-        result.detail="Backup obrigatorio falhou. Nenhuma alteracao foi feita. "+io_detail;
-        sqlite3_close(db);
-        sqlite3_free(work);
-        return result;
+        // Fallback outside the app subdirectory. This helps when an old
+        // /data/TrophyUnlocker1352 directory has restrictive ownership/mode.
+        char fallback[256];
+        snprintf(fallback,sizeof(fallback),
+                 "/data/TU1352_backup_%08x_set%lld_t%03d.bak",
+                 unsigned(user),title_database_id,trophy_id);
+        std::string fallback_detail;
+        int fallback_status=write_bytes_atomic(fallback,original.data(),original.size(),fallback_detail);
+        if (!fallback_status) {
+            result.backup_path=fallback;
+            st=0;
+        } else {
+            result.status=fallback_status;
+            result.detail="Backup obrigatorio falhou. Nenhuma alteracao foi feita. Principal: "+
+                          io_detail+" | Fallback: "+fallback_detail;
+            sqlite3_close(db);
+            sqlite3_free(work);
+            return result;
+        }
     }
 
     char* err=nullptr;
