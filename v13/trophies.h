@@ -62,4 +62,12 @@ struct TrophyVisualRevertResult {
 
 TrophyVisualRevertResult revert_visual_trophy(long long title_database_id, int trophy_id);
 
+struct TrophyFakeUnlockResult {
+    int status = -1;
+    std::string detail;
+    std::string backup_path;
+};
+
+TrophyFakeUnlockResult fake_unlock_trophy(long long title_database_id, int trophy_id);
+
 }
