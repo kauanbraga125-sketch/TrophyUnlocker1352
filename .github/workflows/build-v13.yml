@@ -1,8 +1,8 @@
-name: Build Trophy Unlocker V13.21 L2 Fake Unlock
+name: Build Trophy Unlocker V13.23 OPTIONS Fake Unlock
 
 on:
   push:
-    branches: [feature/v13.21-l2-fake-unlock]
+    branches: [fix/v13.23-options-fake-unlock]
   workflow_dispatch:
 
 permissions:
@@ -14,27 +14,27 @@ jobs:
     timeout-minutes: 30
     steps:
       - uses: actions/checkout@v4
-      - name: Test and build V13.21 L2 fake unlock package
+      - name: Test and build V13.23 OPTIONS fake unlock package
         run: bash ci/build_v13.sh
       - uses: actions/upload-artifact@v4
         with:
-          name: TrophyUnlocker1352-V13.21-L2-Fake-Unlock
+          name: TrophyUnlocker1352-V13.23-OPTIONS-Fake-Unlock
           if-no-files-found: error
           retention-days: 30
           path: |
-            dist_v13/Trophy_Unlocker_13.52_V13_21_L2_Fake_Unlock.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_23_OPTIONS_Fake_Unlock.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/host-tests.txt
             dist_v13/pkg-validation.txt
             dist_v13/param-sfo.txt
-      - name: Publish validated V13.21 L2 fake unlock PKG
+      - name: Publish validated V13.23 OPTIONS fake unlock PKG
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: v13.21-l2-fake-unlock
-          name: Trophy Unlocker V13.21 L2 Fake Unlock
+          tag_name: v13.23-options-fake-unlock
+          name: Trophy Unlocker V13.23 OPTIONS Fake Unlock
           prerelease: true
           files: |
-            dist_v13/Trophy_Unlocker_13.52_V13_21_L2_Fake_Unlock.pkg
+            dist_v13/Trophy_Unlocker_13.52_V13_23_OPTIONS_Fake_Unlock.pkg
             dist_v13/SHA256SUMS.txt
             dist_v13/pkg-validation.txt
             dist_v13/host-tests.txt
