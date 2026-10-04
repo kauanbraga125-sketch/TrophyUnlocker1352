@@ -44,6 +44,7 @@ python3 "$ROOT/v13/patch_v1315_perf.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1316_dirty.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1317_startup_cover.py" "$WORK/SDL2/main.cpp"
 python3 "$ROOT/v13/patch_v1318_final.py" "$WORK/SDL2/main.cpp"
+python3 "$ROOT/v13/patch_v1319_revert.py" "$WORK/SDL2/main.cpp"
 cp "$ROOT/v13/Makefile" "$WORK/Makefile"
 make -C "$WORK" clean
 make -C "$WORK" -j2
@@ -53,6 +54,6 @@ PKG="$WORK/IV0000-BREW13533_00-TROPHYV12UI01200.pkg"
 if rg -i '\[(FAIL|ERROR)\]' "$DIST/pkg-validation.txt"; then exit 1; fi
 test "$(rg -c '^\[OK\]' "$DIST/pkg-validation.txt")" -ge 28
 "$TOOL" sfo_listentries "$WORK/sce_sys/param.sfo" > "$DIST/param-sfo.txt"
-OUT="Trophy_Unlocker_13.52_V13_18_Final_Stable.pkg"
+OUT="Trophy_Unlocker_13.52_V13_19_Visual_Revert.pkg"
 cp "$PKG" "$DIST/$OUT"
 (cd "$DIST" && sha256sum "$OUT" > SHA256SUMS.txt)
