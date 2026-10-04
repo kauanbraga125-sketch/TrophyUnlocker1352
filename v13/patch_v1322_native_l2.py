@@ -39,14 +39,14 @@ rep('''        case SDLK_l: return 6;''','''        case SDLK_l: return 17;''')
 rep('''                else if (key == 6 && n) {''','''                else if (key == 17 && n) {''')
 
 # Open a native ScePad handle. This avoids ambiguity in SDL trigger mappings.
-rep('''    SDL_Joystick* joystick=SDL_NumJoysticks() > 0 ? SDL_JoystickOpen(0) : nullptr;
-    tu::FileSystem& fs=tu::native_filesystem();''','''    SDL_Joystick* joystick=SDL_NumJoysticks() > 0 ? SDL_JoystickOpen(0) : nullptr;
+rep('''#endif
+    tu::FileSystem& fs=tu::native_filesystem();''','''#endif
 #ifndef TU_HOST_PREVIEW
     int native_pad=-1;
     int32_t native_user=0;
     scePadInit();
     if (sceUserServiceGetInitialUser(&native_user) >= 0)
-        native_pad=scePadOpen(uint32_t(native_user),0,0,nullptr);
+        native_pad=scePadOpen(native_user,0,0,nullptr);
     bool native_l2_down=false;
 #endif
     tu::FileSystem& fs=tu::native_filesystem();''')
