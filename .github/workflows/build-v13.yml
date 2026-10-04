@@ -15,7 +15,17 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - name: Test and build V13.22 native L2 package
-        run: bash ci/build_v13.sh
+        run: |
+          set -o pipefail
+          bash ci/build_v13.sh 2>&1 | tee build-v1322.log
+      - name: Upload V13.22 build log
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: V13.22-build-log
+          if-no-files-found: error
+          retention-days: 7
+          path: build-v1322.log
       - uses: actions/upload-artifact@v4
         with:
           name: TrophyUnlocker1352-V13.22-Native-L2
